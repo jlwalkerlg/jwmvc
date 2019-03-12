@@ -66,7 +66,7 @@ class Paginator
      */
     public function getTotalPages()
     {
-        return (int) ceil($this->total / $this->limit);
+        return $this->total === 0 ? 1 : (int) ceil($this->total / $this->limit);
     }
 
 
