@@ -57,7 +57,8 @@ class DB extends Database
             $sth = self::$dbh->query($sql);
         } else {
             $sth = self::$dbh->prepare($sql);
-            $sth->execute($params);
+            self::bind($sth, $params);
+            $sth->execute();
         }
         return $sth;
     }
@@ -553,7 +554,7 @@ class DB extends Database
             return $this->sth = self::$dbh->query($this->sql);
         } else {
             $this->sth = self::$dbh->prepare($this->sql);
-            $this->bind();
+            self::bind($this->sth, $this->params);
             return $this->sth->execute();
         }
     }
@@ -579,16 +580,19 @@ class DB extends Database
 
 
     /**
-     * Bind all parameters to SQL query string as appropriate type.
+     * Bind all parameters to a PDO statement as appropriate type.
+     *
+     * @param PDOStatement $sth Statement handle to bound parameters to.
+     * @param array $params Parameters to bind to statement handle.
      */
-    protected function bind()
+    private static function bind(PDOStatement $sth, array $params)
     {
-        foreach ($this->params as $paramName => $value) {
-            $type = $this->getPdoType($value);
+        foreach ($params as $paramName => $value) {
+            $type = self::getPdoType($value);
             // If using positional (?) placeholders, param names are
             // integerers; ensure they are one-based (required by PDO).
             if (is_int($paramName)) $paramName++;;
-            $this->sth->bindValue($paramName, $value, $type);
+            $sth->bindValue($paramName, $value, $type);
         }
     }
 
@@ -598,7 +602,7 @@ class DB extends Database
      *
      * @return string PDO type.
      */
-    private function getPdoType($var)
+    private static function getPdoType($var)
     {
         switch (gettype($var)) {
             case 'boolean':
