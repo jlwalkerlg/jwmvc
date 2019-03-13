@@ -17,8 +17,11 @@ class Validator
     /**
      * Store item on object instance, parse validations and store
      * parsed validations for each field in item on object instance.
+     *
+     * @param object $item Model instance whose properties are to be validated.
+     * @param array $validations Array of validations to run against model instance.
      */
-    public function __construct(array $item, array $validations)
+    public function __construct(object $item, array $validations)
     {
         // Store item on object.
         $this->item = $item;
@@ -97,8 +100,36 @@ class Validator
      */
     private function required($field)
     {
-        if (empty($this->item[$field])) {
+        if (empty($this->item->$field)) {
             $this->errors[$field] = 'Required.';
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * Ensure field is not already in database unique.
+     *
+     * @param mixed $field Name of field to check.
+     * @param string $table Table to check for record uniqueness.
+     * @return bool True if field is unique; false otherwise.
+     */
+    private function unique($field, string $table)
+    {
+        $primaryKey = $this->item->getPrimaryKey();
+        if (!empty($this->$primaryKey)) {
+            $count = DB::table($table)->where([
+                [$field, $this->item->$field],
+                [$primaryKey, '!=', $this->item->$primaryKey]
+            ])->count();
+        } else {
+            $count = DB::table($table)->where([
+                [$field, $this->item->$field]
+            ])->count();
+        }
+        if ($count > 0) {
+            $this->errors[$field] = 'Already taken.';
             return false;
         }
         return true;
@@ -113,7 +144,7 @@ class Validator
      */
     private function format($field, string $format)
     {
-        if ($format === 'email' && filter_var($this->item[$field], FILTER_VALIDATE_EMAIL) === false) {
+        if ($format === 'email' && filter_var($this->item->$field, FILTER_VALIDATE_EMAIL) === false) {
             $this->errors[$field] = 'Invalid email.';
             return false;
         }
@@ -130,7 +161,7 @@ class Validator
      */
     private function max($field, $value)
     {
-        if (strlen($this->item[$field]) > $value) {
+        if (strlen($this->item->$field) > $value) {
             $this->errors[$field] = 'Must not be longer than ' . $value . ' characters.';
             return false;
         }
@@ -147,7 +178,7 @@ class Validator
      */
     private function min($field, $value)
     {
-        if (strlen($this->item[$field]) < $value) {
+        if (strlen($this->item->$field) < $value) {
             $this->errors[$field] = 'Must not be shorter than ' . $value . ' characters.';
             return false;
         }
@@ -164,7 +195,7 @@ class Validator
      */
     private function matches($field, $fieldToMatch)
     {
-        if ($this->item[$field] !== $this->item[$fieldToMatch]) {
+        if ($this->item->$field !== $this->item->$fieldToMatch) {
             $this->errors[$field] = 'Must match ' . $fieldToMatch . '.';
             return false;
         }

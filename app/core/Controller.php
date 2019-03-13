@@ -112,10 +112,10 @@ class Controller
      * the validated property on the controller instance is changed to true. Otherwise,
      * a list of valiations errors are saved on the controller instance.
      *
-     * @param array $item Array to be validated.
-     * @param array $validations Array of validations to run against item.
+     * @param object $item Model instance whose properties are to be validated.
+     * @param array $validations Array of validations to run against model instance.
      */
-    public function validate(array $item, array $validations)
+    public function validate(object $item, array $validations)
     {
         $validator = new Validator($item, $validations);
         if (!$validator->run()) {

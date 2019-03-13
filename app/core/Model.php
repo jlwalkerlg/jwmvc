@@ -35,6 +35,17 @@ class Model
 
 
     /**
+     * Retrieve name of primary key.
+     *
+     * @return string Primary key for the model.
+     */
+    public function getPrimaryKey()
+    {
+        return static::$primaryKey;
+    }
+
+
+    /**
      * Retrieve record(s) from database by their primary key
      * and return as (a) new model instance(s).
      *

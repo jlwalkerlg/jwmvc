@@ -30,18 +30,19 @@ class Users extends Controller
      */
     public function create()
     {
+        // Instantiate new user object.
+        $user = new User;
+        $user->assign($_POST);
+
         // Validate form inputs for new user.
-        $this->validate($_POST, [
-            'email' => 'required|format:email|max:255',
+        $this->validate($user, [
+            'email' => 'required|unique:users|format:email|max:255',
             'password' => 'required|min:10|max:255',
             'confirm_password' => 'matches:password'
         ]);
 
         // Validate CSRF token.
         if (CSRF::validateToken()) {
-            // Instantiate new user object.
-            $user = new User;
-            $user->assign($_POST);
             // Hash password.
             $user->password = password_hash($user->password, PASSWORD_DEFAULT);
             // Save new user in database.
@@ -83,15 +84,15 @@ class Users extends Controller
      */
     public function login()
     {
-        $this->validate($_POST, [
+        $user = new User;
+        $user->assign($_POST);
+
+        $this->validate($user, [
             'email' => 'required',
             'password' => 'required'
         ]);
 
         if (CSRF::validateToken()) {
-            $user = new User;
-            $user->assign($_POST);
-
             $existingUser = DB::table('users')->where('email', $user->email)->first();
 
             if (password_verify($user->password, $existingUser->password)) {

@@ -298,7 +298,7 @@ Returns number of records deleted.
 ### Libraries
 
 #### Form Validation
-JWMVC features a form validation library for easily validating form inputs. The core controller features a `Controller::validate()` method which accepts an associative array to validate as the first argument, and an associative array of validation rules as the second argument.
+JWMVC features a form validation library for easily validating form inputs. The core controller features a `Controller::validate()` method which accepts a the model instance to validate as the first argument, and an associative array of validation rules as the second argument.
 
 If validations fail, the user is automatically redirected back to the form and the both the validation error messages and the form values themselves are stored in the session, allowing them to be captured by the controller which displays the form. This redirection allows the developer to maintain a RESTful routing convention, while displaying form errors and re-displaying invalid input if required.
 
@@ -330,7 +330,10 @@ class Posts extends Controller
 {
     public function create($id)
     {
-        $this->validate($_POST, [
+        $post = new Post;
+        $post->assign($_POST);
+
+        $this->validate($post, [
             'title' => 'required|max:255',
             'body' => 'required|min:10'
         ]);
@@ -345,6 +348,7 @@ Supported validations:
 - 'max:n' -- ensure a field value is not larger than n characters long
 - 'min:n' -- ensure a field value is not less than n characters long
 - 'format:email' -- ensure a field value has valid email format
+- 'unique:posts' -- ensure a field value is unique among records in posts table
 
 
 #### File Upload
@@ -517,3 +521,4 @@ Improvements planned for future updates to the framework:
 - Database migrations.
 - Inbuilt CSRF protection for form validation.
 - Form helper library for easily handling display and submitting forms.
+- More form validation methods.
