@@ -18,14 +18,6 @@ class Controller
     protected $cacheFilename;
 
 
-    /** @var bool $validated True if all validations pass successfully; false otherwise.  */
-    protected $validated = false;
-
-
-    /** @var array $validationErrors List of validation errors from any failed validations. */
-    protected $validationErrors = [];
-
-
     public function __destruct()
     {
         $this->cacheOutput();
@@ -125,12 +117,11 @@ class Controller
      */
     public function validate(array $item, array $validations)
     {
-        $this->validated = false;
         $validator = new Validator($item, $validations);
-        if ($validator->run()) {
-            $this->validated = true;
-        } else {
-            $this->validationErrors = $validator->getErrors();
+        if (!$validator->run()) {
+            Session::set('formValues', $item);
+            Session::set('formErrors', $validator->getErrors());
+            redirect(Session::get('back'));
         }
     }
 }

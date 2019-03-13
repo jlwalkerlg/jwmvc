@@ -8,10 +8,10 @@ class Session
     /**
      * Get value stored in session.
      *
-     * @param mixed $index Index of value to retrieve from session.
+     * @param string $index Index of value to retrieve from session.
      * @return mixed The value, or null if not found.
      */
-    public static function get($index)
+    public static function get(string $index)
     {
         return $_SESSION[$index] ?? null;
     }
@@ -20,10 +20,10 @@ class Session
     /**
      * Set a value in the session.
      *
-     * @param mixed $index Index to store value under.
+     * @param string $index Index to store value under.
      * @param mixed $value Value to store under index in session.
      */
-    public static function set($index, $value)
+    public static function set(string $index, $value)
     {
         $_SESSION[$index] = $value;
     }
@@ -32,11 +32,26 @@ class Session
     /**
      * Unset a value from the session.
      *
-     * @param mixed $index Index of value in session to unset.
+     * @param string $index Index of value in session to unset.
      */
-    public static function destroy($index)
+    public static function unset(string $index)
     {
         unset($_SESSION[$index]);
+    }
+
+
+    /**
+     * Get and unset value from session.
+     *
+     * @param string $index Index of value in session to get.
+     *
+     * @return mixed The value, or null if not found.
+     */
+    public static function getAndUnset(string $index)
+    {
+        $value = self::get($index);
+        self::unset($index);
+        return $value;
     }
 
 
@@ -75,8 +90,8 @@ class Session
      */
     public static function logout()
     {
-        self::destroy('user_id');
-        self::destroy('login_time');
+        self::unset('user_id');
+        self::unset('login_time');
     }
 
 
@@ -98,7 +113,7 @@ class Session
         } else {
             if ($flash = self::get('flash')) {
                 echo '<p class="flash flash-' . $flash['type'] . '">' . h($flash['msg']) . '</p>';
-                self::destroy('flash');
+                self::unset('flash');
             }
         }
     }

@@ -138,6 +138,8 @@ If you wish to nest your controllers into subdirectories within the app/controll
 Router::get('/posts', 'products\Mens@index');
 ```
 
+The router also stores the URL in the session for GET requests, allowing controllers to redirect back to the previous page if desired, such as when a form validation fails.
+
 
 ## Features
 
@@ -298,8 +300,31 @@ Returns number of records deleted.
 #### Form Validation
 JWMVC features a form validation library for easily validating form inputs. The core controller features a `Controller::validate()` method which accepts an associative array to validate as the first argument, and an associative array of validation rules as the second argument.
 
+If validations fail, the user is automatically redirected back to the form and the both the validation error messages and the form values themselves are stored in the session, allowing them to be captured by the controller which displays the form. This redirection allows the developer to maintain a RESTful routing convention, while displaying form errors and re-displaying invalid input if required.
+
 Usage:
 
+Display the form, making sure to capture any validation errors that might have been stored in the session, as well as any stored user input:
+```php
+class Posts extends Controller
+{
+    public function new()
+    {
+        $post = Session::getAndUnset('formValues') ?? [];
+        $post['title'] = $post['title'] ?? '';
+        $post['body'] = $post['body'] ?? '';
+
+        $errors = Session::getAndUnset('formErrors') ?? [];
+
+        $data['post'] = $post;
+        $data['errors'] = $errors;
+
+        $this->render('posts/new', $data);
+    }
+}
+```
+
+Handle the form submission:
 ```php
 class Posts extends Controller
 {
@@ -310,9 +335,7 @@ class Posts extends Controller
             'body' => 'required|min:10'
         ]);
 
-        if ($this->validated) {
-            ...
-        }
+        // Check CSRF token, store new user in database...
     }
 }
 ```
@@ -472,6 +495,7 @@ The Session class can be used to get, set and unset session variables easily:
 $user_id = Session::get('user_id');
 Session::unset('user_id');
 Session::set('user_id', 10);
+$user_id = Session::getAndUnset('user_id');
 ```
 
 The Session class also allows you to create flash messages as follows:
@@ -483,3 +507,12 @@ Then ensure the message is displayed in your view:
 <?= Session::flash(); ?>
 ```
 This will return `<p class="flash flash-success">I am the flash message</p>`, then delete the message from the session. If no flash message is set, it will return an empty string.
+
+
+## Improvements
+Improvements planned for future updates to the framework:
+
+- Allow multiple files to be uploaded with one instance of the FileUpload library.
+- Add transactions to queries that effect multiple rows.
+- Database migrations.
+- Inbuilt CSRF protection for form validation.

@@ -49,6 +49,15 @@ class Router
             show_404();
         }
 
+        // If request method is a GET, set the requested URL in
+        // the session so controllers can redirect back to
+        // the previous page if desired.
+        // E.g. forms handling POST requests can redirect back to
+        // the form if there are errors.
+        if ($requestMethod === 'GET') {
+            Session::set('back', $url);
+        }
+
         // Get reference relevant sub-array in routes array.
         $routes =& self::$routes[$requestMethod];
 
