@@ -10,10 +10,11 @@ class Users extends Controller
      */
     public function new()
     {
-        $user = Session::getAndUnset('formValues') ?? [];
-        $user['email'] = $user['email'] ?? '';
-
+        $formValues = Session::getAndUnset('formValues') ?? [];
         $errors = Session::getAndUnset('formErrors') ?? [];
+
+        $user = new User;
+        $user->assign($formValues);
 
         $data['user'] = $user;
         $data['errors'] = $errors;
@@ -40,9 +41,9 @@ class Users extends Controller
         if (CSRF::validateToken()) {
             // Instantiate new user object.
             $user = new User;
-            $user->email = $_POST['email'];
+            $user->assign($_POST);
             // Hash password.
-            $user->password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+            $user->password = password_hash($user->password, PASSWORD_DEFAULT);
             // Save new user in database.
             if ($user->save()) {
                 // Log user in.
@@ -62,10 +63,11 @@ class Users extends Controller
      */
     public function showLogin()
     {
-        $user = Session::getAndUnset('formValues') ?? [];
-        $user['email'] = $user['email'] ?? '';
-
+        $formValues = Session::getAndUnset('formValues') ?? [];
         $errors = Session::getAndUnset('formErrors') ?? [];
+
+        $user = new User;
+        $user->assign($formValues);
 
         $data['user'] = $user;
         $data['errors'] = $errors;
@@ -81,20 +83,24 @@ class Users extends Controller
      */
     public function login()
     {
+        $this->validate($_POST, [
+            'email' => 'required',
+            'password' => 'required'
+        ]);
+
         if (CSRF::validateToken()) {
             $user = new User;
-            $user->email = $_POST['email'] ?? '';
+            $user->assign($_POST);
 
             $existingUser = DB::table('users')->where('email', $user->email)->first();
 
-            if (password_verify($_POST['password'], $existingUser->password)) {
+            if (password_verify($user->password, $existingUser->password)) {
                 Session::login($existingUser);
                 Session::flash('success', 'Logged in.');
                 redirect('/');
             }
         }
 
-        Session::set('formValues', $_POST);
         Session::flash('error', 'Failed to login.');
         redirect(Session::get('back'));
     }

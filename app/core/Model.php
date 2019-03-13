@@ -21,6 +21,20 @@ class Model
 
 
     /**
+     * Ensure fillable fields are set as properties on the object.
+     *
+     * This allows them to be overwritten with values from the database
+     * or from a form while still ensuring they are accessibly from views.
+     */
+    public function __construct()
+    {
+        foreach (static::$fillable as $field) {
+            $this->$field = '';
+        }
+    }
+
+
+    /**
      * Retrieve record(s) from database by their primary key
      * and return as (a) new model instance(s).
      *
@@ -104,9 +118,7 @@ class Model
      */
     public function save()
     {
-        $primaryKey = self::$primaryKey;
-
-        if (isset($this->$primaryKey)) {
+        if (isset($this->{self::$primaryKey})) {
             return $this->update();
         }
         return $this->insert();
@@ -122,10 +134,8 @@ class Model
     {
         $attributes = $this->getAttributes();
 
-        $primaryKey = self::$primaryKey;
-
         if ($result = DB::table(static::$table)->insert($attributes)) {
-            $this->$primaryKey = $result;
+            $this->{self::$primaryKey} = $result;
             return true;
         }
 

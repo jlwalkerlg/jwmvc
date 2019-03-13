@@ -1,7 +1,7 @@
 <form action="<?= url('/register') ?>" method="POST">
     <?= CSRF::generateInput() ?>
 
-    <input type="email" name="email" id="email" placeholder="Email" value="<?= h($user['email']) ?>" class="<?= isset($errors['email']) ? 'form-error-input' : '' ?>">
+    <input type="email" name="email" id="email" placeholder="Email" value="<?= h($user->email) ?>" class="<?= isset($errors['email']) ? 'form-error-input' : '' ?>">
     <?php if (isset($errors['email'])): ?>
         <p class="form-error-text"><?= h($errors['email']) ?></p>
     <?php endif; ?>

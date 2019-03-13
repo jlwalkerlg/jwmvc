@@ -311,10 +311,10 @@ class Posts extends Controller
     public function new()
     {
         $post = Session::getAndUnset('formValues') ?? [];
-        $post['title'] = $post['title'] ?? '';
-        $post['body'] = $post['body'] ?? '';
-
         $errors = Session::getAndUnset('formErrors') ?? [];
+
+        $post = new Post;
+        $post->assign($_POST);
 
         $data['post'] = $post;
         $data['errors'] = $errors;
@@ -516,3 +516,4 @@ Improvements planned for future updates to the framework:
 - Add transactions to queries that effect multiple rows.
 - Database migrations.
 - Inbuilt CSRF protection for form validation.
+- Form helper library for easily handling display and submitting forms.
