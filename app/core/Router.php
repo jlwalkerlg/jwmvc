@@ -41,7 +41,7 @@ class Router
     {
         // Get URL from query string.
         $url = $_GET['url'] ?? '';
-        $url = rtrim($url, '/');
+        $url = trim($url, '/');
 
         // Get request method and check it is a valid method.
         $requestMethod = self::getRequestMethod();
@@ -61,9 +61,12 @@ class Router
         // Get reference relevant sub-array in routes array.
         $routes =& self::$routes[$requestMethod];
 
-        // Check if the URL is in the relevent routes array.
-        foreach ($routes as $route => $callback) {
-            if (preg_match($route, $url, $params)) {
+        // Check if any routes match the URL.
+        foreach ($routes as $route) {
+            if (preg_match($route->getRoute(), $url, $params)) {
+                // Get callback (Controller@action) registered to route.
+                $callback = $route->getCallback();
+
                 // Store callback as a static class property.
                 self::$callback = $callback;
 
@@ -140,11 +143,14 @@ class Router
      *
      * @param string $route URL to match before calling callback
      * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
      */
     public static function get(string $route, string $callback)
     {
-        $route = self::parseRoute($route);
-        self::$routes['GET'][$route] = $callback;
+        $route = new Route($route, $callback);
+        self::$routes['GET'][] = $route;
+        return $route;
     }
 
 
@@ -153,11 +159,14 @@ class Router
      *
      * @param string $route URL to match before calling callback
      * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
      */
     public static function post(string $route, string $callback)
     {
-        $route = self::parseRoute($route);
-        self::$routes['POST'][$route] = $callback;
+        $route = new Route($route, $callback);
+        self::$routes['POST'][] = $route;
+        return $route;
     }
 
 
@@ -166,11 +175,14 @@ class Router
      *
      * @param string $route URL to match before calling callback
      * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
      */
     public static function put(string $route, string $callback)
     {
-        $route = self::parseRoute($route);
-        self::$routes['PUT'][$route] = $callback;
+        $route = new Route($route, $callback);
+        self::$routes['PUT'][] = $route;
+        return $route;
     }
 
 
@@ -179,11 +191,14 @@ class Router
      *
      * @param string $route URL to match before calling callback
      * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
      */
     public static function patch(string $route, string $callback)
     {
-        $route = self::parseRoute($route);
-        self::$routes['PATCH'][$route] = $callback;
+        $route = new Route($route, $callback);
+        self::$routes['PATCH'][] = $route;
+        return $route;
     }
 
 
@@ -192,11 +207,14 @@ class Router
      *
      * @param string $route URL to match before calling callback
      * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
      */
     public static function delete(string $route, string $callback)
     {
-        $route = self::parseRoute($route);
-        self::$routes['DELETE'][$route] = $callback;
+        $route = new Route($route, $callback);
+        self::$routes['DELETE'][] = $route;
+        return $route;
     }
 
 
@@ -206,14 +224,17 @@ class Router
      * @param array $verbs List of HTTP verbs with which to register the route
      * @param string $route URL to match before calling callback
      * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
      */
     public static function match(array $verbs, string $route, string $callback)
     {
-        $route = self::parseRoute($route);
+        $route = new Route($route, $callback);
         foreach ($verbs as $verb) {
             $verb = strtoupper($verb);
-            self::$routes[$verb][$route] = $callback;
+            self::$routes[$verb][] = $route;
         }
+        return $route;
     }
 
 
@@ -222,32 +243,15 @@ class Router
      *
      * @param string $route URL to match before calling callback
      * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
      */
     public static function any(string $route, string $callback)
     {
-        $route = self::parseRoute($route);
+        $route = new Route($route, $callback);
         foreach (self::$routes as &$routes) {
-            $routes[$route] = $callback;
+            $routes[] = $route;
         }
-    }
-
-
-    // Convert routes to a regex pattern by replacing any {params} with
-    // a regex group that will match one or more word characters.
-    // This route is then used as a regex pattern to test against
-    // the URL typed in by the user.
-    /**
-     * Replace any {param} in the route with the regex
-     * pattern (\w+), which will match one or more word
-     * characters ([A-Za-z0-9_]).
-     *
-     * @return string Pattern to match against URL
-     */
-    private static function parseRoute(string $route)
-    {
-        $route = ltrim($route, '/');
-        $route = preg_replace('/{[^{}]+}/', '(\w+)', $route);
-        $route = "~^$route$~";
         return $route;
     }
 
