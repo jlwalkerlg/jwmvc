@@ -140,6 +140,13 @@ Router::get('/posts', 'products\Mens@index');
 
 The router also stores the URL in the session for GET requests, allowing controllers to redirect back to the previous page if desired, such as when a form validation fails.
 
+You can also impose regex restrictions on specific parameters in the routes using the Route::where() method:
+
+```php
+Router::get('/posts/{id}', 'Posts@show')->where('id', '[0-9]+');
+Router::get('/posts/category/{category}/page/{page}', 'Posts@show')->where(['category' => '[A-Za-z]+', 'page' => '[0-9]+']);
+```
+
 
 ## Features
 
