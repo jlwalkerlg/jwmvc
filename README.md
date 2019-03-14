@@ -144,7 +144,7 @@ The router also stores the URL in the session for GET requests, allowing control
 ## Features
 
 ### Cache
-Caching files is simple, and is inspired by [https://www.codeigniter.com/userguide3/libraries/caching.html](CodeIgniter's cache usage).
+Caching files is simple, and is inspired by (CodeIgniter's cache usage)[https://www.codeigniter.com/userguide3/libraries/caching.html].
 
 To cache the HTML output of any controller method, simply use `$this->cache(n)` anywhere within the method, where `n` is the number of seconds to cache the output for (defaults to 1 day if not provided). This will save a new `.html` file in the app/cache directory, whose name will follow the format `name_spaced_Controller@method.n.html`. Subsequent requests to the same controller method will cause this file to be served directly to the client, without processing the method again. After `n` seconds is up, the next request to the same method will cause the file to be delete from the cache and a then re-written, unless the `$this->cache(n)` line has been removed from the controller method.
 
@@ -161,7 +161,7 @@ class Home extends Controller
 ```
 
 ### Query Builder
-The query builder is based on [https://laravel.com/docs/5.8/queries](Laravel's query builder), and features much of the most common query methods. Below are some examples.
+The query builder is based on (Laravel's query builder)[https://laravel.com/docs/5.8/queries], and features much of the most common query methods. Below are some examples.
 
 #### Fetching multiple records with DB::get()
 ```php
@@ -228,7 +228,7 @@ $posts = DB::query('SELECT * FROM posts WHERE user_id = :user_id', [':user_id' =
 ```
 
 ### Active Record Pattern
-JWMVC implements the active record pattern for easily performing CRUD operations on database records, based on [https://laravel.com/docs/5.8/eloquent](Laravel's Eloquent ORM).
+JWMVC implements the active record pattern for easily performing CRUD operations on database records, based on (Laravel's Eloquent ORM)[https://laravel.com/docs/5.8/eloquent].
 
 #### Retrieving all records with Model::all()
 ```php
@@ -434,7 +434,7 @@ class Posts extends Controller
 
 
 #### Gmail
-The Gmail library is build on the [https://github.com/PHPMailer/PHPMailer/blob/master/examples/gmail_xoauth.phps](PHPMailer library). Once you have set your credentials in the app/config/config.php file, you can use the Gmail library to send Gmail as follows:
+The Gmail library is build on the (PHPMailer library)[https://github.com/PHPMailer/PHPMailer/blob/master/examples/gmail_xoauth.phps]. Once you have set your credentials in the app/config/config.php file, you can use the Gmail library to send Gmail as follows:
 
 ```php
 $to = 'example@hotmail.com';
@@ -453,7 +453,7 @@ if ($gmail->send()) {
 Note: the message can include HTML and embedded images in the main body.
 
 
-#### Paginator
+#### Paginator
 Use the Paginator class to generate a list of pagination links.
 
 Usage:
