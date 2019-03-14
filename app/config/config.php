@@ -7,7 +7,7 @@ define('DB_PASS', '');
 define('DB_NAME', '');
 
 // URL root
-define('URL_ROOT', 'http://example.com');
+define('URL_ROOT', '/');
 
 // App root.
 define('APP_ROOT', dirname(dirname(__FILE__)));
