@@ -34,7 +34,7 @@ function u(string $str) {
 function url(string $url) {
     $url_root = rtrim(URL_ROOT, '/');
     $url = ltrim($url, '/');
-    return u($url_root . '/' . $url);
+    return $url_root . '/' . $url;
 }
 
 
