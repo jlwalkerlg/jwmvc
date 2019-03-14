@@ -7,7 +7,7 @@ define('DB_PASS', '');
 define('DB_NAME', '');
 
 // URL root
-define('URL_ROOT', '/');
+define('URL_ROOT', '/mvc'); // Set this to / for a live app.
 
 // App root.
 define('APP_ROOT', dirname(dirname(__FILE__)));
