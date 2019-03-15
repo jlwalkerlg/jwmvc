@@ -418,16 +418,10 @@ class DB extends Database
         $this->buildLimit();
         $this->buildOffset();
         $this->execute();
-        $records = $this->sth->fetchAll();
         if (!isset($this->model)) {
-            return $records;
+            return $this->sth->fetchAll();
         }
-        $results = [];
-        foreach ($records as $record) {
-            $model = new $this->model;
-            $results[] = $model->assign($record);
-        }
-        return $results;
+        return $this->sth->fetchAll(PDO::FETCH_CLASS, $this->model);
     }
 
 

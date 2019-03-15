@@ -21,20 +21,6 @@ class Model
 
 
     /**
-     * Ensure fillable fields are set as properties on the object.
-     *
-     * This allows them to be overwritten with values from the database
-     * or from a form while still ensuring they are accessibly from views.
-     */
-    public function __construct()
-    {
-        foreach (static::$fillable as $field) {
-            $this->$field = '';
-        }
-    }
-
-
-    /**
      * Retrieve name of primary key.
      *
      * @return string Primary key for the model.
@@ -95,13 +81,13 @@ class Model
     public static function destroy($values)
     {
         if (!is_array($values)) {
-            return DB::table(static::$table)->return(get_called_class())->where(static::$primaryKey, $values)->limit(1)->delete();
+            return DB::table(static::$table)->where(static::$primaryKey, $values)->limit(1)->delete();
         }
         $orWhere = [];
         foreach ($values as $value) {
             $orWhere[] = [static::$primaryKey, $value];
         }
-        return DB::table(static::$table)->return(get_called_class())->orWhere($orWhere)->limit(count($values))->delete();
+        return DB::table(static::$table)->orWhere($orWhere)->limit(count($values))->delete();
     }
 
 
