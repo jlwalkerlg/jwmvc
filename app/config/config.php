@@ -15,6 +15,9 @@ define('APP_ROOT', dirname(dirname(__FILE__)));
 // Project root.
 define('PROJECT_ROOT', dirname(APP_ROOT));
 
+// Public root.
+define('PUBLIC_ROOT', PROJECT_ROOT . '/public');
+
 // Site name.
 define('SITE_NAME', '');
 
