@@ -121,7 +121,7 @@ class Controller
         if (!$validator->run()) {
             Session::set('formValues', $item);
             Session::set('formErrors', $validator->getErrors());
-            redirect(Session::get('back'));
+            redirect('back');
         }
     }
 }

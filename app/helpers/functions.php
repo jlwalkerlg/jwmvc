@@ -44,6 +44,9 @@ function url(string $url) {
  * @param string $url Site URL to redirect to, relative to URL_ROOT.
  **/
 function redirect(string $url) {
+    if ($url === 'back') {
+        $url = Session::get('back') ?? '/';
+    }
     header('Location: ' . url($url));
     exit;
 }
