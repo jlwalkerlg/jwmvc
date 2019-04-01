@@ -183,9 +183,19 @@ class Validator
      */
     private function max($field, $value)
     {
-        if (strlen($this->item->$field) > $value) {
-            $this->errors[$field] = 'Must not be longer than ' . $value . ' characters.';
-            return false;
+        $val = $this->item->$field;
+
+        if (is_numeric($val)) {
+            if (floatval($val) > $value) {
+                $this->errors[$field] = 'Must not be greater than ' . $value . '.';
+                return false;
+            }
+        }
+        else {
+            if (strlen($this->item->$field) > $value) {
+                $this->errors[$field] = 'Must not be longer than ' . $value . ' characters.';
+                return false;
+            }
         }
         return true;
     }
@@ -200,9 +210,19 @@ class Validator
      */
     private function min($field, $value)
     {
-        if (strlen($this->item->$field) < $value) {
-            $this->errors[$field] = 'Must not be shorter than ' . $value . ' characters.';
-            return false;
+        $val = $this->item->$field;
+
+        if (is_numeric($val)) {
+            if (floatval($val) < $value) {
+                $this->errors[$field] = 'Must not be less than ' . $value . '.';
+                return false;
+            }
+        }
+        else {
+            if (strlen($this->item->$field) < $value) {
+                $this->errors[$field] = 'Must not be shorter than ' . $value . ' characters.';
+                return false;
+            }
         }
         return true;
     }

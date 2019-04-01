@@ -352,8 +352,8 @@ class Posts extends Controller
 
 Supported validations:
 - 'required' -- ensure a field value is set
-- 'max:n' -- ensure a field value is not larger than n characters long
-- 'min:n' -- ensure a field value is not less than n characters long
+- 'max:n' -- ensure a field value is not larger than n in size if value is numeric, or length otherwise
+- 'min:n' -- ensure a field value is not less than n in size if value is numeric, or length otherwise
 - 'format:email' -- ensure a field value has valid email format
 - 'format:date' -- ensure a field value has format xxxx-xx-xx
 - 'format:numeric' -- ensure a field value is numeric
