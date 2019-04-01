@@ -356,6 +356,9 @@ Supported validations:
 - 'min:n' -- ensure a field value is not less than n characters long
 - 'format:email' -- ensure a field value has valid email format
 - 'format:date' -- ensure a field value has format xxxx-xx-xx
+- 'format:numeric' -- ensure a field value is numeric
+- 'format:int' -- ensure a field value is an integer
+- 'format:float' -- ensure a field value is a float
 - 'unique:posts' -- ensure a field value is unique among records in posts table
 
 

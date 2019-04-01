@@ -144,12 +144,26 @@ class Validator
      */
     private function format($field, string $format)
     {
-        if ($format === 'email' && filter_var($this->item->$field, FILTER_VALIDATE_EMAIL) === false) {
+        $val = $this->item->$field;
+
+        if ($format === 'email' && filter_var($val, FILTER_VALIDATE_EMAIL) === false) {
             $this->errors[$field] = 'Invalid email.';
             return false;
         }
-        if ($format === 'date' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->item->$field)) {
+        if ($format === 'date' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $val)) {
             $this->errors[$field] = 'Invalid date format.';
+            return false;
+        }
+        if ($format === 'numeric' && !is_numeric($val)) {
+            $this->errors[$field] = 'Must be an number.';
+            return false;
+        }
+        if ($format === 'int' && (!is_numeric($val) || $val != (int) $val)) {
+            $this->errors[$field] = 'Must be an integer.';
+            return false;
+        }
+        if ($format === 'float' && (!is_numeric($val) || $val == (int) $val)) {
+            $this->errors[$field] = 'Must be a float.';
             return false;
         }
         return true;
