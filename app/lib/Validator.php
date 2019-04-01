@@ -166,6 +166,10 @@ class Validator
             $this->errors[$field] = 'Must be a float.';
             return false;
         }
+        if ($format === 'url' && filter_var($val, FILTER_VALIDATE_URL) === false) {
+            $this->errors[$field] = 'Invalid URL.';
+            return false;
+        }
         return true;
     }
 

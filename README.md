@@ -359,6 +359,7 @@ Supported validations:
 - 'format:numeric' -- ensure a field value is numeric
 - 'format:int' -- ensure a field value is an integer
 - 'format:float' -- ensure a field value is a float
+- 'format:url' -- ensure a field value has a valid url format
 - 'unique:posts' -- ensure a field value is unique among records in posts table
 
 
