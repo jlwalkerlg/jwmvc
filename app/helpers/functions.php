@@ -45,7 +45,7 @@ function url(string $url) {
  **/
 function redirect(string $url) {
     if ($url === 'back') {
-        $url = Session::get('back') ?? '/';
+        $url = Session::get('back') ?? URL_ROOT;
     }
     header('Location: ' . url($url));
     exit;
