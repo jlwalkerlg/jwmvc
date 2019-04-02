@@ -22,6 +22,18 @@ class FileUpload
     /** @var int $maxSize Maximum size allowed for uploaded file in bytes. */
     private $maxSize = 51200;
 
+    /** @var bool $mkdir Specifies whether or not the destination directory should be created if it does not already exist. */
+    private $mkdir = false;
+
+    /** @var bool $dirCreated Identifies whether a new directory was created for the file(s). */
+    private $dirCreated = false;
+
+    /** @var bool $overwrite Specifies whether or not uploaded file should overwrite existing files of the same name.
+     *
+     * Uploaded file will be renamed if this is false.
+     */
+	private $overwrite = false;
+
     /** @var array $permittedTypes Permitted mime types. */
 	private $permittedTypes = [
         'image/jpeg',
@@ -37,13 +49,6 @@ class FileUpload
         'jpg', 'jpeg', 'gif', 'png', 'svg', 'webp'
     ];
 
-    /** @var bool
-     *
-     * Whether file should be renamed if a file of the same name already exists.
-     * Existing file will be overwritten if this is set to false.
-     */
-	private $renameDuplicates = true;
-
 
     /**
      * Save file, file name, and destination to object instance.
@@ -51,33 +56,7 @@ class FileUpload
 	public function __construct(array $file)
 	{
         $this->file = $file;
-        $this->name = $this->generateName($file['name']);
-    }
-
-
-    /**
-     * Set destination directory to upload file to.
-     *
-     * @param string $destination Name of directory.
-     * @param bool $mkdir Specifies whether the directory should be created if it does not exist.
-     */
-    public function setDestination(string $destination, bool $mkdir = false)
-    {
-        // Create directory if requested and if it does not already exist.
-        if ($mkdir && !is_dir($destination)) {
-            if (!mkdir($destination)) {
-                throw new Exception('Problem creating new directory.');
-            }
-        }
-        // Ensure destination folder exists and is writable.
-        if (!is_dir($destination) || !is_writable($destination)) {
-            throw new Exception('Destination must be a valid, writable folder.');
-        }
-        // Append trailing slash to destination folder if it doesn't have one already.
-		if ($destination[strlen($destination) - 1] !== '/') {
-			$destination .= '/';
-        }
-        $this->destination = $destination;
+        $this->name = $file['name'];
     }
 
 
@@ -94,6 +73,10 @@ class FileUpload
 
         if (key_exists('maxSize', $options)) {
             $this->setMaxSize($options['maxSize']);
+        }
+
+        if (key_exists('mkdir', $options)) {
+            $this->mkdir = (bool) $options['mkdir'];
         }
     }
 
@@ -124,19 +107,47 @@ class FileUpload
 		if (is_numeric($bytes) && $bytes > 0) {
 			$this->maxSize = $bytes;
 		}
-	}
+    }
+
+
+    /**
+     * Set destination directory to upload file to.
+     *
+     * @param string $destination Name of directory.
+     * @param bool $mkdir Specifies whether the directory should be created if it does not exist.
+     */
+    private function setDestination(string $destination, bool $mkdir = false)
+    {
+        // Create directory if requested and if it does not already exist.
+        if ($this->mkdir && !is_dir($destination)) {
+            if (mkdir($destination)) {
+                $this->dirCreated = true;
+            } else {
+                throw new Exception('Problem creating new directory.');
+            }
+        }
+        // Ensure destination folder exists and is writable.
+        if (!is_dir($destination) || !is_writable($destination)) {
+            throw new Exception('Destination must be a valid, writable folder.');
+        }
+        // Append trailing slash to destination folder if it doesn't have one already.
+		if ($destination[strlen($destination) - 1] !== '/') {
+			$destination .= '/';
+        }
+        $this->destination = $destination;
+    }
 
 
     /**
      * Check file is fit for upload and upload if so.
      *
+     * @param string $destination Destination directory to upload file to.
      * @return bool True if file is successfully uploaded; false otherwise.
      */
-	public function upload()
+	public function upload(string $destination)
 	{
-        if (!isset($this->destination)) {
-            throw new Exception('Destination directory not set.');
-        }
+        $this->setDestination($destination);
+        $this->rename();
         if ($this->checkFile()) {
             if ($this->saveFile()) {
                 return true;
@@ -145,7 +156,27 @@ class FileUpload
             }
         }
         return false;
-	}
+    }
+
+
+    /**
+     * Delete uploaded file and, if directory was created to hold it, that too.
+     *
+     * @return bool True if file (and directory) successfully deleted or doesn't exist; false otherwise.
+     */
+    public function delete()
+    {
+        $path = $this->destination . $this->name;
+        if (file_exists($path)) {
+            if (!unlink($path)) {
+                return false;
+            }
+            if ($this->dirCreated && !rmdir($this->destination)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 
     /**
@@ -284,33 +315,32 @@ class FileUpload
 
 
     /**
-     * Generate a unique name with which to store the file.
-     *
-     * @param $filename Original file name from which to generate a new unique name.
-     * @return string Unique file name.
+     * Rename the file if necessary.
      */
-    private function generateName(string $filename)
-    {
-        // Get names of files in destination directory to ensure
-        // name is truly unique.
-        $existing = scandir($this->destination);
-
-        // Get file extension.
-        $extension = pathinfo($this->file['name'], PATHINFO_EXTENSION);
-
-        // Initialise counter to append to file name if it already exists.
-        $i = 0;
-
-        // Generate unique name.
-        $newName = sha1(time() . $this->file['tmp_name']) . '.' . $extension;
-
-        // If file already exists in destination directory, add counter to end of name.
-        while (in_array($newName, $existing)) {
-            $newName = sha1(time() . $this->file['tmp_name']) . $i++ . '.' . $extension;
+	private function rename()
+	{
+        // If the file name has spaces in it, replace them with underscores.
+        if (strpos($this->name, ' ')) {
+			$this->name = str_replace(' ', '_', $this->name);
         }
-
-        return $newName;
-    }
+        // Only rename duplicates if overwrite is false.
+		if (!$this->overwrite) {
+            // Get an array of all files in destination directory.
+            $existing = scandir($this->destination);
+            // If the file name already exists in the destination directory...
+			if (in_array($this->name, $existing, true)) {
+                // Get different parts of the file name to be used in renaming.
+                $nameparts = pathinfo($this->name);
+                $filename = $nameparts['filename'];
+                $extension = $nameparts['extension'];
+                // Rename file with number until file name is unique.
+				$i = 1;
+				do {
+					$this->name = $filename . '_' . $i++ . '.' . $extension;
+				} while (in_array($this->name, $existing, true));
+			}
+		}
+	}
 
 
     /**

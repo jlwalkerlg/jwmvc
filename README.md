@@ -380,52 +380,43 @@ Then pass the uploaded file to the FileUpload class's constructor:
 $upload = new FileUpload($_FILES['image']);
 ```
 
-By default a unique name will be generated for the uploaded image, but you can choose to name it manually, as well as override other default behaviours, as follows:
+By default the uploaded image will keep the same name, unless the file already exists in the destination directory, in which case an integer will be appended to the file name. If you prefer, you can override these and other default behaviours with the `FileUpload::setOptions()` function:
 ```php
 $upload->setOptions([
-    'maxSize' => 1000*1024, // set the max size allowed for the file in bytes
-    'name' => 'profilePic1' // rename the file to profilePic1 (the extension will not change)
+    'maxSize' => 1000*1024, // set the max size allowed for the file in bytes (default: 51200)
+    'name' => 'profilePic1', // rename the file to profilePic1 (the extension will not change)
+    'overwrite' => true, // overwrite any existing file of the same name (default: false).
+    'mkdir' => true // create directory if destination does not already exists (default: false)
 ]);
 ```
 
-You can then get name of the file, before or after uploading, as follows:
-```php
-$name = $upload->getName();
-```
-
-Set the directory to which the file should be uploaded:
-```php
-$upload->setDestination(PUBLIC_ROOT . '/uploads');
-```
-
-By default the destination directory must already exist, but you can specify whether or not this should be created on the fly with a second parameter:
-```php
-$upload->setDestination(PUBLIC_ROOT . '/uploads', true);
-```
-With this, a new directory at `PUBLIC_ROOT . '/uploads'` will be created if it does not already exist.
-
 Attempt to upload the file, and get any error messages if it fails:
 ```php
-if ($upload->save()) {
+if ($upload->upload(PUBLIC_ROOT . '/uploads')) {
     ...
 } else {
     $errors = $upload->getErrors();
 }
 ```
 
-The library throws an `Exception` if no destination directory was set; if the destination directory exists but is not a valid, writeable directory; if the destination directory does not exist and fails to be created; and if you attempt to set a max size that exceeds the server limit specified in your php.ini file. These exceptions should be caught, so that the full usage would like something like:
+You can then get name with which the file was uploaded:
+```php
+$name = $upload->getName();
+```
+
+The library throws an `Exception` if the destination directory exists but is not a valid, writeable directory; if the destination directory does not exist and fails to be created; and if you attempt to set a max size that exceeds the server limit specified in your php.ini file. These exceptions should be caught, so that the full usage would like something like:
 
 ```php
 try {
     $upload = new FileUpload($_FILES['image']);
     $upload->setOptions([
-        'maxSize' => 1000*1024, // set the max size allowed for the file in bytes
-        'renameDuplicates' => false, // don't rename files if a file of the same name already exists (existing file will be overwritten),
-        'name' => 'profilePic1' // rename the file to profilePic1 (the extension will not change)
+        'maxSize' => 1000*1024,
+        'name' => 'profilePic1',
+        'overwrite' => true,
+        'mkdir' => true
     ]);
-    $name = $upload->getName();
-    $upload->setDestination(PUBLIC_ROOT . '/uploads');
-    if ($upload->upload()) {
+    if ($upload->upload(PUBLIC_ROOT . '/uploads')) {
+        $name = $upload->getName();
         ...
     } else {
         $errors = $upload->getErrors();
