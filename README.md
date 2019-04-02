@@ -426,6 +426,12 @@ try {
 }
 ```
 
+You may wish to delete a file after uploading it if something goes wrong later in the script. For this, you can use the FileUpload::delete() method:
+```php
+$upload->delete();
+```
+This will attempt to delete the file and its parent directory if the directory was created for the file (by setting the mkdir option to true), and returns true if successful, or false otherwise. Note: if the directory fails to delete after the file was deleted, this will return false and the directory will remain.
+
 Currently only a single file may be uploaded per FileUpload instance, and the library only supports jpeg, gif, png, svg, and webp files.
 
 
