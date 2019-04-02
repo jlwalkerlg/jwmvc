@@ -41,4 +41,17 @@ class Database
             exit('Failed to connect to database.');
         }
     }
+
+    /**
+     * Get database handle instance.
+     *
+     * Useful for beginning transactions etc.
+     *
+     * @return PDO PDO database handle instance.
+     */
+    public static function get_instance()
+    {
+        self::set_instance();
+        return self::$dbh;
+    }
 }
