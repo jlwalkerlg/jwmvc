@@ -375,19 +375,34 @@ To upload a file, first create a POST form with the `enctype="multipart/form-dat
 </form>
 ```
 
-Then pass the uploaded file to the FileUpload class's constructor, along with the absolute path to the location on the server where you wish the file to be uploaded:
+Then pass the uploaded file to the FileUpload class's constructor:
 ```php
-$upload = new FileUpload($_FILES['image'], APP_ROOT . '/uploads/');
+$upload = new FileUpload($_FILES['image']);
 ```
 
-You can override the default validation behaviour as follows:
+By default a unique name will be generated for the uploaded image, but you can choose to name it manually, as well as override other default behaviours, as follows:
 ```php
 $upload->setOptions([
     'maxSize' => 1000*1024, // set the max size allowed for the file in bytes
-    'renameDuplicates' => false, // don't rename files if a file of the same name already exists (existing file will be overwritten),
     'name' => 'profilePic1' // rename the file to profilePic1 (the extension will not change)
 ]);
 ```
+
+You can then get name of the file, before or after uploading, as follows:
+```php
+$name = $upload->getName();
+```
+
+Set the directory to which the file should be uploaded:
+```php
+$upload->setDestination(PUBLIC_ROOT . '/uploads');
+```
+
+By default the destination directory must already exist, but you can specify whether or not this should be created on the fly with a second parameter:
+```php
+$upload->setDestination(PUBLIC_ROOT . '/uploads', true);
+```
+With this, a new directory at `PUBLIC_ROOT . '/uploads'` will be created if it does not already exist.
 
 Attempt to upload the file, and get any error messages if it fails:
 ```php
@@ -398,17 +413,19 @@ if ($upload->save()) {
 }
 ```
 
-The library throws an `Exception` if the destination is not a valid, writeable directory, and if you attempt to set a max size that exceeds the server limit specified in your php.ini file. These exceptions should be caught, so that the full usage would like something like:
+The library throws an `Exception` if no destination directory was set; if the destination directory exists but is not a valid, writeable directory; if the destination directory does not exist and fails to be created; and if you attempt to set a max size that exceeds the server limit specified in your php.ini file. These exceptions should be caught, so that the full usage would like something like:
 
 ```php
 try {
-    $upload = new FileUpload($_FILES['image'], APP_ROOT . '/uploads/');
+    $upload = new FileUpload($_FILES['image']);
     $upload->setOptions([
         'maxSize' => 1000*1024, // set the max size allowed for the file in bytes
         'renameDuplicates' => false, // don't rename files if a file of the same name already exists (existing file will be overwritten),
         'name' => 'profilePic1' // rename the file to profilePic1 (the extension will not change)
     ]);
-    if ($upload->save()) {
+    $name = $upload->getName();
+    $upload->setDestination(PUBLIC_ROOT . '/uploads');
+    if ($upload->upload()) {
         ...
     } else {
         $errors = $upload->getErrors();

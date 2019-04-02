@@ -48,19 +48,35 @@ class FileUpload
     /**
      * Save file, file name, and destination to object instance.
      */
-	public function __construct(array $file, string $destination)
+	public function __construct(array $file)
 	{
+        $this->file = $file;
+        $this->name = $this->generateName($file['name']);
+    }
+
+
+    /**
+     * Set destination directory to upload file to.
+     *
+     * @param string $destination Name of directory.
+     * @param bool $mkdir Specifies whether the directory should be created if it does not exist.
+     */
+    public function setDestination(string $destination, bool $mkdir = false)
+    {
+        // Create directory if requested and if it does not already exist.
+        if ($mkdir && !is_dir($destination)) {
+            if (!mkdir($destination)) {
+                throw new Exception('Problem creating new directory.');
+            }
+        }
         // Ensure destination folder exists and is writable.
-		if (!is_dir($destination) || !is_writable($destination)) {
-			throw new Exception('Destination must be a valid, writable folder.');
+        if (!is_dir($destination) || !is_writable($destination)) {
+            throw new Exception('Destination must be a valid, writable folder.');
         }
         // Append trailing slash to destination folder if it doesn't have one already.
 		if ($destination[strlen($destination) - 1] !== '/') {
 			$destination .= '/';
         }
-
-        $this->file = $file;
-        $this->name = $file['name'];
         $this->destination = $destination;
     }
 
@@ -78,10 +94,6 @@ class FileUpload
 
         if (key_exists('maxSize', $options)) {
             $this->setMaxSize($options['maxSize']);
-        }
-
-        if (key_exists('renameDuplicates', $options)) {
-            $this->renameDuplicates = $options['renameDuplicates'];
         }
     }
 
@@ -122,9 +134,10 @@ class FileUpload
      */
 	public function upload()
 	{
+        if (!isset($this->destination)) {
+            throw new Exception('Destination directory not set.');
+        }
         if ($this->checkFile()) {
-            // Rename file before upload if necessary.
-            $this->rename();
             if ($this->saveFile()) {
                 return true;
             } else {
@@ -136,14 +149,25 @@ class FileUpload
 
 
     /**
-     * Retrieve error.
+     * Retrieve errors array.
      *
      * @return array Array of errors.
      */
 	public function getErrors()
 	{
 		return $this->errors;
-	}
+    }
+
+
+    /**
+     * Retrieve file name.
+     *
+     * @return string Name of file.
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
 
 
     /**
@@ -166,7 +190,7 @@ class FileUpload
             return false;
         }
 		return true;
-	}
+    }
 
 
     /**
@@ -249,39 +273,6 @@ class FileUpload
 
 
     /**
-     * Rename the file if necessary.
-     */
-	private function rename()
-	{
-        // If the file name has spaces in it, replace them with underscores.
-        if (strpos($this->name, ' ')) {
-			$this->name = str_replace(' ', '_', $this->name);
-        }
-
-        // Only rename duplicates if desired.
-		if ($this->renameDuplicates) {
-
-            // Get an array of all files in destination directory.
-            $existing = scandir($this->destination);
-
-            // If the file name already exists in the destination directory...
-			if (in_array($this->name, $existing, true)) {
-                // Get different parts of the file name to be used in renaming.
-                $nameparts = pathinfo($this->name);
-                $filename = $nameparts['filename'];
-                $extension = $nameparts['extension'];
-
-                // Rename file with number until file name is unique.
-				$i = 1;
-				do {
-					$this->name = $filename . '_' . $i++ . '.' . $extension;
-				} while (in_array($this->name, $existing, true));
-			}
-		}
-	}
-
-
-    /**
      * Save file in destination directory.
      *
      * @return bool True if file was saved successfully; false otherwise.
@@ -289,6 +280,36 @@ class FileUpload
 	private function saveFile()
 	{
         return move_uploaded_file($this->file['tmp_name'], $this->destination . $this->name);
+    }
+
+
+    /**
+     * Generate a unique name with which to store the file.
+     *
+     * @param $filename Original file name from which to generate a new unique name.
+     * @return string Unique file name.
+     */
+    private function generateName(string $filename)
+    {
+        // Get names of files in destination directory to ensure
+        // name is truly unique.
+        $existing = scandir($this->destination);
+
+        // Get file extension.
+        $extension = pathinfo($this->file['name'], PATHINFO_EXTENSION);
+
+        // Initialise counter to append to file name if it already exists.
+        $i = 0;
+
+        // Generate unique name.
+        $newName = sha1(time() . $this->file['tmp_name']) . '.' . $extension;
+
+        // If file already exists in destination directory, add counter to end of name.
+        while (in_array($newName, $existing)) {
+            $newName = sha1(time() . $this->file['tmp_name']) . $i++ . '.' . $extension;
+        }
+
+        return $newName;
     }
 
 
