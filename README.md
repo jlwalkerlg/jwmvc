@@ -305,7 +305,7 @@ Returns number of records deleted.
 ### Libraries
 
 #### Form Validation
-JWMVC features a form validation library for easily validating form inputs. The core controller features a `Controller::validate()` method which accepts a the model instance to validate as the first argument, and an associative array of validation rules as the second argument.
+JWMVC features a form validation library for easily validating form inputs. The core controller features a `Controller::validate()` method which an associative array of validation rules to run against the $_POST and $FILES superglobals.
 
 If validations fail, the user is automatically redirected back to the form and the both the validation error messages and the form values themselves are stored in the session, allowing them to be captured by the controller which displays the form. This redirection allows the developer to maintain a RESTful routing convention, while displaying form errors and re-displaying invalid input if required.
 
@@ -337,13 +337,13 @@ class Posts extends Controller
 {
     public function create($id)
     {
-        $post = new Post;
-        $post->assign($_POST);
-
-        $this->validate($post, [
+        $this->validate([
             'title' => 'required|max:255',
             'body' => 'required|min:10'
         ]);
+
+        $post = new Post;
+        $post->assign($_POST);
 
         // Check CSRF token, store new user in database...
     }
@@ -351,9 +351,9 @@ class Posts extends Controller
 ```
 
 Supported validations:
-- 'required' -- ensure a field value is set
-- 'max:n' -- ensure a field value is not larger than n in size if value is numeric, or length otherwise
-- 'min:n' -- ensure a field value is not less than n in size if value is numeric, or length otherwise
+- 'required' -- ensure a field value is set and is not an empty string, or that a file has successfully uploaded to the tmp directory and is not empty
+- 'max:n' -- ensure a field value is not larger than n in number, string length, or file size accordingly
+- 'min:n' -- ensure a field value is not less than n in number, string length, or file size accordingly
 - 'format:email' -- ensure a field value has valid email format
 - 'format:date' -- ensure a field value has format xxxx-xx-xx
 - 'format:numeric' -- ensure a field value is numeric
@@ -361,6 +361,8 @@ Supported validations:
 - 'format:float' -- ensure a field value is a float
 - 'format:url' -- ensure a field value has a valid url format
 - 'unique:posts' -- ensure a field value is unique among records in posts table
+- 'unique:posts,id,2' -- ensure a field value is unique among records in posts table, ignoring the record with a primary key (id) of 2
+- 'type:jpg,jpeg' -- ensure an uploaded file matchs the given types
 
 
 #### File Upload
@@ -383,8 +385,9 @@ $upload = new FileUpload($_FILES['image']);
 By default the uploaded image will keep the same name, unless the file already exists in the destination directory, in which case an integer will be appended to the file name. If you prefer, you can override these and other default behaviours with the `FileUpload::setOptions()` function:
 ```php
 $upload->setOptions([
-    'maxSize' => 1000*1024, // set the max size allowed for the file in bytes (default: 51200)
     'name' => 'profilePic1', // rename the file to profilePic1 (the extension will not change)
+    'maxSize' => 1000*1024, // override max size allowed for the file in bytes (default: ini_get('upload_max_filesize'))
+    'types' => ['jpg', 'jpeg'], // override permitted file types (default: ['jpg', 'jpeg', 'gif', 'png', 'svg', 'webp'])
     'overwrite' => true, // overwrite any existing file of the same name (default: false).
     'mkdir' => true // create directory if destination does not already exists (default: false)
 ]);

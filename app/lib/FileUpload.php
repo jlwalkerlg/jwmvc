@@ -20,7 +20,7 @@ class FileUpload
     private $errors = [];
 
     /** @var int $maxSize Maximum size allowed for uploaded file in bytes. */
-    private $maxSize = 51200;
+    private $maxSize;
 
     /** @var bool $mkdir Specifies whether or not the destination directory should be created if it does not already exist. */
     private $mkdir = false;
@@ -36,12 +36,12 @@ class FileUpload
 
     /** @var array $permittedTypes Permitted mime types. */
 	private $permittedTypes = [
-        'image/jpeg',
-        'image/pjpeg',
-        'image/gif',
-        'image/png',
-        'image/svg+xml',
-        'image/webp'
+        'jpg' => ['image/jpeg', 'image/pjpeg'],
+        'jpeg' => ['image/jpeg', 'image/pjpeg'],
+        'gif' => ['image/gif'],
+        'png' => ['image/png'],
+        'svg' => ['image/svg+xml'],
+        'webp' => ['image/webp']
     ];
 
     /** @var array $permittedExtensions Permitted extensions. */
@@ -55,6 +55,8 @@ class FileUpload
      */
 	public function __construct(array $file)
 	{
+        $upload_max_filesize = ini_get('upload_max_filesize');
+        $this->maxSize = self::convertToBytes($upload_max_filesize);
         $this->file = $file;
         $this->name = $file['name'];
     }
@@ -71,8 +73,16 @@ class FileUpload
             $this->setName($options['name']);
         }
 
+        if (key_exists('types', $options)) {
+            $this->setTypes($options['types']);
+        }
+
         if (key_exists('maxSize', $options)) {
             $this->setMaxSize($options['maxSize']);
+        }
+
+        if (key_exists('overwrite', $options)) {
+            $this->overwrite = (bool) $options['overwrite'];
         }
 
         if (key_exists('mkdir', $options)) {
@@ -94,15 +104,26 @@ class FileUpload
 
 
     /**
+     * Override default permitted extensions.
+     *
+     * @param array $extensions Permitted extensions.
+     */
+    private function setTypes(array $extensions)
+    {
+        $this->permittedExtensions = $extensions;
+    }
+
+
+    /**
      * Override the default max file size.
      *
      * @param int $bytes Maximum bytes allowed for uploaded file.
      */
 	private function setMaxSize(int $bytes)
 	{
-		$serverMax = self::convertToBytes(ini_get('upload_max_filesize'));
-		if ($bytes > $serverMax) {
-			throw new Exception('Maximum size cannot exceed server limit for individual files: ' . self::convertFromBytes($serverMax));
+		$upload_max_filesize = ini_get('upload_max_filesize');
+		if ($bytes > self::convertToBytes($upload_max_filesize)) {
+			throw new Exception('Maximum size cannot exceed server limit for individual files: ' . $upload_max_filesize);
 		}
 		if (is_numeric($bytes) && $bytes > 0) {
 			$this->maxSize = $bytes;
@@ -114,9 +135,8 @@ class FileUpload
      * Set destination directory to upload file to.
      *
      * @param string $destination Name of directory.
-     * @param bool $mkdir Specifies whether the directory should be created if it does not exist.
      */
-    private function setDestination(string $destination, bool $mkdir = false)
+    private function setDestination(string $destination)
     {
         // Create directory if requested and if it does not already exist.
         if ($this->mkdir && !is_dir($destination)) {
@@ -148,11 +168,11 @@ class FileUpload
 	{
         $this->setDestination($destination);
         $this->rename();
-        if ($this->checkFile()) {
-            if ($this->saveFile()) {
+        if ($this->validate()) {
+            if ($this->move()) {
                 return true;
             } else {
-                $this->errors[] = 'Could not upload file.';
+                $this->errors['move'] = 'Could not move file to permanent location.';
             }
         }
         return false;
@@ -180,12 +200,16 @@ class FileUpload
 
 
     /**
-     * Retrieve errors array.
+     * Retrieve errors array, or a specific error message.
      *
+     * @param string $key Key of error to return.
      * @return array Array of errors.
      */
-	public function getErrors()
+	public function getErrors(string $key = null)
 	{
+        if (isset($key) && array_key_exists($key, $this->errors)) {
+            return $this->errors[$key];
+        }
 		return $this->errors;
     }
 
@@ -206,12 +230,12 @@ class FileUpload
      *
      * @return bool True if file is fit for upload; false otherwise.
      */
-	private function checkFile()
+	private function validate()
 	{
-		if (!$this->checkError()) {
+		if (!$this->checkRequired()) {
 			return false;
 		}
-		if (!$this->checkSize()) {
+		if (!$this->checkMaxSize()) {
 			return false;
 		}
         if (!$this->checkType()) {
@@ -225,30 +249,33 @@ class FileUpload
 
 
     /**
-     * Store error message in errors array.
-     * Gets called only when the file has an error code which is not 0.
+     * Check file was successfully uploaded to temporary directory.
      *
-     * @return bool True if uploaded file has no error; false otherwise.
+     * @return bool True if successful; false otherwise.
      */
-	private function checkError()
+	public function checkRequired()
 	{
         if ($this->file['error'] === 0) {
+            if ($this->file['size'] === 0) {
+                $this->errors['required'] = 'File is empty.';
+                return false;
+            }
             return true;
         }
 
 		switch($this->file['error']) {
 			case 1:
 			case 2:
-                $this->errors[] = 'File is too big (max: ' . self::convertFromBytes($this->maxSize) . ').';
+                $this->errors['required'] = 'File is too big (max: ' . self::convertFromBytes($this->maxSize) . ').';
                 break;
 			case 3:
-                $this->errors[] = 'File was only partially uploaded.';
+                $this->errors['required'] = 'File was only partially uploaded.';
                 break;
 			case 4:
-                $this->errors[] = 'No file submitted.';
+                $this->errors['required'] = 'No file submitted.';
                 break;
 			default:
-                $this->errors[] = 'Sorry, there was a problem uploading the file.';
+                $this->errors['required'] = 'Sorry, there was a problem uploading the file.';
         }
         return false;
 	}
@@ -259,13 +286,12 @@ class FileUpload
      *
      * @return bool True if size is below max allowed size; false otherwise.
      */
-	private function checkSize()
+	public function checkMaxSize(int $maxSize = null)
 	{
-		if ($this->file['size'] === 0) {
-			$this->errors[] = 'File is empty.';
-			return false;
-		} elseif ($this->file['size'] > $this->maxSize) {
-			$this->errors[] = 'File exceeds the maximum size (' . self::convertFromBytes($this->maxSize) . ').';
+        $maxSize = $maxSize ?? $this->maxSize;
+
+		if ($this->file['maxSize'] > $maxSize) {
+			$this->errors['maxSize'] = 'File exceeds the maximum size (' . self::convertFromBytes($maxSize) . ').';
 			return false;
 		}
         return true;
@@ -273,30 +299,28 @@ class FileUpload
 
 
     /**
-     * Check file mime type is in permitted types array.
+     * Check file extension and corrseponding MIME type is in permitted array.
      *
-     * @return bool True if file mime type is in list of permitted types; false otherwise.
+     * @param array $extensions List of permitted extensions.
+     * @return bool True if file extension and corresponsing MIME type are permitted; false otherwise.
      */
-	private function checkType()
-	{
-		if (!in_array($this->file['type'], $this->permittedTypes, true)) {
-            $this->errors[] = 'File is not of a permitted type.';
-			return false;
-		}
-        return true;
-    }
-
-
-    /**
-     * Check file extension is in permitted extensions array.
-     *
-     * @return bool True if file extension is in list of permitted extensions; false otherwise.
-     */
-    private function checkExtension()
+    public function checkType(array $extensions = null)
     {
+        $extensions = $extensions ?? $this->permittedExtensions;
+
         $extension = pathinfo($this->name, PATHINFO_EXTENSION);
-        if (!in_array($extension, $this->permittedExtensions, true)) {
-            $this->errors[] = 'File extension is not permitted.';
+        $type = $this->file['type'];
+
+        if (!in_array($extension, $extensions, true)) {
+            $this->errors['type'] = 'Extension must be one of the following: ' . implode(', ', $extensions) . '.';
+            return false;
+        }
+        if (!array_key_exists($extension, $this->permittedTypes)) {
+            $this->errors['type'] = 'MIME type not supported.';
+            return false;
+        }
+        if (!in_array($type, $this->permittedTypes[$extension])) {
+            $this->errors['type'] = 'MIME type does not match its extension.';
             return false;
         }
         return true;
@@ -308,7 +332,7 @@ class FileUpload
      *
      * @return bool True if file was saved successfully; false otherwise.
      */
-	private function saveFile()
+	private function move()
 	{
         return move_uploaded_file($this->file['tmp_name'], $this->destination . $this->name);
     }
