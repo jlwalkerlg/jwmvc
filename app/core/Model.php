@@ -187,14 +187,17 @@ class Model
 
 
     /**
-     * Assign values from an associative array or object to this model instance.
+     * Assign values from an associative array or object to this model instance,
+     * only if they correspond to a fillable field in the model.
      *
      * @return object Model instance with values assigned.
      */
     public function assign($values)
     {
         foreach ($values as $key => $value) {
-            $this->$key = $value;
+            if (in_array($key, static::$fillable)) {
+                $this->$key = $value;
+            }
         }
         return $this;
     }
