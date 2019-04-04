@@ -7,32 +7,38 @@
  */
 class FileUpload
 {
-    /** @var array $file File array, from form, to be uploaded. */
-    private $file;
-
-    /** @var string $name Name of file to upload, including extension. */
+    /** @var string $name Name of uploaded file, including extension. */
     private $name;
+
+    /** @var string $type Type of uploaded file. */
+    private $type;
+
+    /** @var string $tmp_name tmp_name of uploaded file. */
+    private $tmp_name;
+
+    /** @var string $error Error code of uploaded file. */
+     private $error;
+
+    /** @var string $size Size of uploaded file in bytes. */
+    private $size;
 
     /** @var string $destination Path to directory where file is to be saved. */
     private $destination;
 
-    /** @var array $errors Array of errors regarding file upload. */
-    private $errors = [];
-
     /** @var int $maxSize Maximum size allowed for uploaded file in bytes. */
     private $maxSize;
-
-    /** @var bool $mkdir Specifies whether or not the destination directory should be created if it does not already exist. */
-    private $mkdir = false;
-
-    /** @var bool $dirCreated Identifies whether a new directory was created for the file(s). */
-    private $dirCreated = false;
 
     /** @var bool $overwrite Specifies whether or not uploaded file should overwrite existing files of the same name.
      *
      * Uploaded file will be renamed if this is false.
      */
 	private $overwrite = false;
+
+    /** @var bool $mkdir Specifies whether or not the destination directory should be created if it does not already exist. */
+    private $mkdir = false;
+
+    /** @var bool $dirCreated Identifies whether a new directory was created for the file(s). */
+    private $dirCreated = false;
 
     /** @var array $permittedTypes Permitted mime types. */
 	private $permittedTypes = [
@@ -49,16 +55,23 @@ class FileUpload
         'jpg', 'jpeg', 'gif', 'png', 'svg', 'webp'
     ];
 
+    /** @var array $errors Array of errors regarding file upload. */
+    private $errors = [];
+
 
     /**
-     * Save file, file name, and destination to object instance.
+     * Save file properties and destination on object.
      */
 	public function __construct(array $file)
 	{
         $upload_max_filesize = ini_get('upload_max_filesize');
         $this->maxSize = self::convertToBytes($upload_max_filesize);
-        $this->file = $file;
+
         $this->name = $file['name'];
+        $this->type = $file['type'];
+        $this->tmp_name = $file['tmp_name'];
+        $this->error = $file['error'];
+        $this->size = $file['size'];
     }
 
 
@@ -88,6 +101,32 @@ class FileUpload
         if (key_exists('mkdir', $options)) {
             $this->mkdir = (bool) $options['mkdir'];
         }
+    }
+
+
+    /**
+     * Retrieve errors array, or a specific error message.
+     *
+     * @param string $key Key of error to return.
+     * @return array Array of errors.
+     */
+	public function getErrors(string $key = null)
+	{
+        if (isset($key) && array_key_exists($key, $this->errors)) {
+            return $this->errors[$key];
+        }
+		return $this->errors;
+    }
+
+
+    /**
+     * Retrieve file name.
+     *
+     * @return string Name of file, including extension.
+     */
+    public function getName()
+    {
+        return $this->name;
     }
 
 
@@ -159,111 +198,21 @@ class FileUpload
 
 
     /**
-     * Check file is fit for upload and upload if so.
-     *
-     * @param string $destination Destination directory to upload file to.
-     * @return bool True if file is successfully uploaded; false otherwise.
-     */
-	public function upload(string $destination)
-	{
-        $this->setDestination($destination);
-        $this->rename();
-        if ($this->validate()) {
-            if ($this->move()) {
-                return true;
-            } else {
-                $this->errors['move'] = 'Could not move file to permanent location.';
-            }
-        }
-        return false;
-    }
-
-
-    /**
-     * Delete uploaded file and, if directory was created to hold it, that too.
-     *
-     * @return bool True if file (and directory) successfully deleted or doesn't exist; false otherwise.
-     */
-    public function delete()
-    {
-        $path = $this->destination . $this->name;
-        if (file_exists($path)) {
-            if (!unlink($path)) {
-                return false;
-            }
-            if ($this->dirCreated && !rmdir($this->destination)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-
-    /**
-     * Retrieve errors array, or a specific error message.
-     *
-     * @param string $key Key of error to return.
-     * @return array Array of errors.
-     */
-	public function getErrors(string $key = null)
-	{
-        if (isset($key) && array_key_exists($key, $this->errors)) {
-            return $this->errors[$key];
-        }
-		return $this->errors;
-    }
-
-
-    /**
-     * Retrieve file name.
-     *
-     * @return string Name of file.
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-
-    /**
-     * Perform various checks to see if the file is fit for upload.
-     *
-     * @return bool True if file is fit for upload; false otherwise.
-     */
-	private function validate()
-	{
-		if (!$this->checkRequired()) {
-			return false;
-		}
-		if (!$this->checkMaxSize()) {
-			return false;
-		}
-        if (!$this->checkType()) {
-            return false;
-        }
-        if (!$this->checkExtension()) {
-            return false;
-        }
-		return true;
-    }
-
-
-    /**
      * Check file was successfully uploaded to temporary directory.
      *
      * @return bool True if successful; false otherwise.
      */
 	public function checkRequired()
 	{
-        if ($this->file['error'] === 0) {
-            if ($this->file['size'] === 0) {
+        if ($this->error === 0) {
+            if ($this->size === 0) {
                 $this->errors['required'] = 'File is empty.';
                 return false;
             }
             return true;
         }
 
-		switch($this->file['error']) {
+		switch($this->error) {
 			case 1:
 			case 2:
                 $this->errors['required'] = 'File is too big (max: ' . self::convertFromBytes($this->maxSize) . ').';
@@ -290,7 +239,7 @@ class FileUpload
 	{
         $maxSize = $maxSize ?? $this->maxSize;
 
-		if ($this->file['maxSize'] > $maxSize) {
+		if ($this->size > $maxSize) {
 			$this->errors['maxSize'] = 'File exceeds the maximum size (' . self::convertFromBytes($maxSize) . ').';
 			return false;
 		}
@@ -309,7 +258,7 @@ class FileUpload
         $extensions = $extensions ?? $this->permittedExtensions;
 
         $extension = pathinfo($this->name, PATHINFO_EXTENSION);
-        $type = $this->file['type'];
+        $type = $this->type;
 
         if (!in_array($extension, $extensions, true)) {
             $this->errors['type'] = 'Extension must be one of the following: ' . implode(', ', $extensions) . '.';
@@ -328,13 +277,25 @@ class FileUpload
 
 
     /**
-     * Save file in destination directory.
+     * Perform various checks to see if the file is fit for upload.
      *
-     * @return bool True if file was saved successfully; false otherwise.
+     * @return bool True if file is fit for upload; false otherwise.
      */
-	private function move()
+	private function validate()
 	{
-        return move_uploaded_file($this->file['tmp_name'], $this->destination . $this->name);
+		if (!$this->checkRequired()) {
+			return false;
+		}
+		if (!$this->checkMaxSize()) {
+			return false;
+		}
+        if (!$this->checkType()) {
+            return false;
+        }
+        if (!$this->checkType()) {
+            return false;
+        }
+		return true;
     }
 
 
@@ -343,10 +304,9 @@ class FileUpload
      */
 	private function rename()
 	{
-        // If the file name has spaces in it, replace them with underscores.
-        if (strpos($this->name, ' ')) {
-			$this->name = str_replace(' ', '_', $this->name);
-        }
+        // Sanitize file name and replace spaces with underscores.
+        $this->filterName();
+
         // Only rename duplicates if overwrite is false.
 		if (!$this->overwrite) {
             // Get an array of all files in destination directory.
@@ -364,7 +324,79 @@ class FileUpload
 				} while (in_array($this->name, $existing, true));
 			}
 		}
-	}
+    }
+
+
+    /**
+     * Sanitize file name and replace spaces with underscores.
+     */
+    private function filterName()
+    {
+        // Replace spaces with underscores.
+        $this->name = str_replace(' ', '_', $this->name);
+
+        // Get filename (without extension) and extension.
+        $filename = pathinfo($this->name, PATHINFO_FILENAME);
+        $extension = pathinfo($this->name, PATHINFO_EXTENSION);
+
+        // Remove any invalid characters.
+        $filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '', $filename);
+
+        // Save filtered file name.
+        $this->name = $filename . '.' . $extension;
+    }
+
+
+    /**
+     * Check file is fit for upload and upload if so.
+     *
+     * @param string $destination Destination directory to upload file to.
+     * @return bool True if file is successfully uploaded; false otherwise.
+     */
+	public function upload(string $destination)
+	{
+        $this->setDestination($destination);
+        $this->rename();
+        if ($this->validate()) {
+            if ($this->move()) {
+                return true;
+            } else {
+                $this->errors['move'] = 'Could not move file to permanent location.';
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * Save file in destination directory.
+     *
+     * @return bool True if file was saved successfully; false otherwise.
+     */
+	private function move()
+	{
+        return move_uploaded_file($this->tmp_name, $this->destination . $this->name);
+    }
+
+
+    /**
+     * Delete uploaded file and, if directory was created to hold it, that too.
+     *
+     * @return bool True if file (and directory) successfully deleted or doesn't exist; false otherwise.
+     */
+    public function delete()
+    {
+        $path = $this->destination . $this->name;
+        if (file_exists($path)) {
+            if (!unlink($path)) {
+                return false;
+            }
+            if ($this->dirCreated && !rmdir($this->destination)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 
     /**
