@@ -366,7 +366,7 @@ Supported validations:
 
 
 #### File Upload
-The file upload library allows you to easily validate uploaded files and save them to a permanent location.
+The file upload library allows you to easily validate uploaded files and store them in a permanent location.
 
 To upload a file, first create a POST form with the `enctype="multipart/form-data"` attribute:
 
@@ -395,7 +395,7 @@ $upload->setOptions([
 
 Attempt to upload the file, and get any error messages if it fails:
 ```php
-if ($upload->upload(PUBLIC_ROOT . '/uploads')) {
+if ($upload->store(PUBLIC_ROOT . '/uploads')) {
     ...
 } else {
     $errors = $upload->getErrors();
@@ -418,7 +418,7 @@ try {
         'overwrite' => true,
         'mkdir' => true
     ]);
-    if ($upload->upload(PUBLIC_ROOT . '/uploads')) {
+    if ($upload->store(PUBLIC_ROOT . '/uploads')) {
         $name = $upload->getName();
         ...
     } else {

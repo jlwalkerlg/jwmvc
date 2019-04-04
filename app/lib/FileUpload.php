@@ -353,7 +353,7 @@ class FileUpload
      * @param string $destination Destination directory to upload file to.
      * @return bool True if file is successfully uploaded; false otherwise.
      */
-	public function upload(string $destination)
+	public function store(string $destination)
 	{
         $this->setDestination($destination);
         $this->rename();
