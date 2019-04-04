@@ -39,20 +39,6 @@ function url(string $url) {
 
 
 /**
- * Redirect and kill script.
- *
- * @param string $url Site URL to redirect to, relative to URL_ROOT.
- **/
-function redirect(string $url) {
-    if ($url === 'back') {
-        $url = Session::get('back') ?? URL_ROOT;
-    }
-    header('Location: ' . url($url));
-    exit;
-}
-
-
-/**
  * Var dump variable within HTML <pre> tags.
  *
  * @param mixed $var Variable to be dumped.
@@ -99,12 +85,48 @@ function pnd($var) {
 
 
 /**
- * Detect is request is a POST request.
+ * Redirect to another page within the site and kill script.
  *
- * @return bool True if request is a POST request; false otherwise.
- **/
-function is_post_request() {
-    return $_SERVER['REQUEST_METHOD'] === 'POST';
+ * @param string $url Site URL to redirect to, relative to URL_ROOT.
+ */
+function redirect(string $url) {
+    header('Location: ' . url($url));
+    exit;
+}
+
+
+/**
+ * Redirect back to previous page and kill script.
+ */
+function back() {
+    $url = Session::get('back') ?? URL_ROOT;
+    redirect($url);
+}
+
+
+/**
+ * Get Request instance.
+ *
+ * @return Request Request instance.
+ */
+function request() {
+    return Request::instance();
+}
+
+
+/**
+ * Retrieve old input value from previous request.
+ *
+ * If no fields are given, the entire old array is returned.
+ * If a string is given, the corrseponding item is returned.
+ * If an array is given, an array of items corrseponding to each
+ * array element is returned.
+ *
+ * @param mixed $field Key(s) corresponding to the item(s) to retrieve.
+ * @return mixed Item(s) from old array.
+ */
+function old($field = null) {
+    return Request::instance()->old($field);
 }
 
 
@@ -128,8 +150,10 @@ function denyAuthRestricted() {
 
 /**
  * Return hidden HTML input field for spoofing HTTP verbs.
+ *
+ * @param string $verb HTTP verb to spoof.
  */
-function spoofMethod($verb) {
+function spoofMethod(string $verb) {
     return '<input type="hidden" name="_method" value="' . strtoupper($verb) . '">';
 }
 

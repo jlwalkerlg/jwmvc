@@ -39,12 +39,16 @@ class Router
      */
     public static function route()
     {
-        // Get URL from query string.
-        $url = $_GET['url'] ?? '';
-        $url = trim($url, '/');
+        // Instantiate Request object.
+        $request = new Request;
 
-        // Get request method and check it is a valid method.
-        $requestMethod = self::getRequestMethod();
+        // Get requested URL.
+        $url = $request->getUrl();
+
+        // Get request method.
+        $requestMethod = $request->method();
+
+        // Check request method is a valid method.
         if (!array_key_exists($requestMethod, self::$routes)) {
             show_404();
         }
@@ -55,12 +59,10 @@ class Router
         // Check if any routes match the URL.
         foreach ($routes as $route) {
             if (preg_match($route->getRoute(), $url, $params)) {
-                // If request method is a GET, set the requested URL in
-                // the session so controllers can redirect back to
-                // the previous page if desired.
-                // E.g. forms handling POST requests can redirect back to
-                // the form if there are errors.
-                if ($requestMethod === 'GET') {
+                // If GET request matches a registered route,
+                // store url in session to allow redirecting back in
+                // from the next request (e.g. for processing invalid forms).
+                if ($request->isGet()) {
                     Session::set('back', $url);
                 }
 
@@ -97,7 +99,7 @@ class Router
                 $controller = end($controller);
 
                 // Instantiate controller.
-                $controller = new $controller;
+                $controller = new $controller($request);
 
                 // Check if method is restricted to authenticated users.
                 if (in_array($method, $controller::getAuthBlacklist(), true)) {
@@ -117,24 +119,6 @@ class Router
 
         // If no route was found, show 404 not found page.
         show_404();
-    }
-
-
-    /**
-     * Return the appropriate request method.
-     * PUT, PATCH, and DELETE requests are detected by
-     * a hidden form input.
-     */
-    private static function getRequestMethod()
-    {
-        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            return 'GET';
-        } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (!isset($_POST['_method'])) {
-                return 'POST';
-            }
-            return strtoupper($_POST['_method']);
-        }
     }
 
 

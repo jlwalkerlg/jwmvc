@@ -302,36 +302,44 @@ Post::destroy([10, 12]); // delete multiple records based on their primary keys
 Returns number of records deleted.
 
 
+### Request
+The `Request` class is instantiated upon each request. It stores all user input, instanties all uploaded files, and features built in CSRF protection for POST, PUT, PATCH, and DELETE requests. It can be used to get an element from the user input arrays ($_GET, $_POST, and $_FILES), get an instantiated file, check the request method, store user input for the next request, and access user input from the previous request.
+
+You can use the `request()` helper to grab a reference to the `Request` instance.
+
+
 ### Libraries
 
 #### Form Validation
-JWMVC features a form validation library for easily validating form inputs. The core controller features a `Controller::validate()` method which an associative array of validation rules to run against the $_POST and $FILES superglobals.
+JWMVC features a form validation library for easily validating form inputs. The core controller features a `Controller::validate()` method which accepts an associative array of validation rules to run against the $_POST and $FILES superglobals.
 
-If validations fail, the user is automatically redirected back to the form and the both the validation error messages and the form values themselves are stored in the session, allowing them to be captured by the controller which displays the form. This redirection allows the developer to maintain a RESTful routing convention, while displaying form errors and re-displaying invalid input if required.
+If validations fail, the user is automatically redirected back to the form and the both the validation error messages and the form values themselves are stored in the session. An array is available from the view under the `$errors` variable, whose keys correspond to the name attributes of the form inputs and whose values are the corrseponding error messages. The submitted values can be captured from the view with the `old()` helper, which accepts string specifying which field to retrieve from the submitted form. If the field does not exist, it will return null.
 
 Usage:
 
-Display the form, making sure to capture any validation errors that might have been stored in the session, as well as any stored user input:
+Display the form:
 ```php
 class Posts extends Controller
 {
     public function new()
     {
-        $post = Session::getAndUnset('formValues') ?? [];
-        $errors = Session::getAndUnset('formErrors') ?? [];
-
-        $post = new Post;
-        $post->assign($_POST);
-
-        $data['post'] = $post;
-        $data['errors'] = $errors;
-
         $this->render('posts/new', $data);
     }
 }
 ```
 
-Handle the form submission:
+Create the view for the form, displaying any submitted fields which failed validation:
+```php
+<form action="<?= url('/posts') ?>" method="POST">
+    <?= CSRF::generateInput() ?>
+
+    <input type="text" name="title" value="<?= old('title') ?>">
+
+    ...
+</form>
+```
+
+Handle the form submission and validate the form fields:
 ```php
 class Posts extends Controller
 {
@@ -342,10 +350,9 @@ class Posts extends Controller
             'body' => 'required|min:10'
         ]);
 
+        // Store new post in database etc...
         $post = new Post;
         $post->assign($_POST);
-
-        // Check CSRF token, store new user in database...
     }
 }
 ```
@@ -372,12 +379,35 @@ To upload a file, first create a POST form with the `enctype="multipart/form-dat
 
 ```php
 <form action="http://example.com/pic" method="POST" enctype="multipart/form-data">
+    <?= CSRF::generateInput() ?>
     <input type="file" name="image" id="image">
     <input type="submit" value="Upload">
 </form>
 ```
 
-Then pass the uploaded file to the FileUpload class's constructor:
+Validate the file:
+```php
+class Users extends Controller
+{
+    public function uploadProfilePic()
+    {
+        $this->validate([
+            'image' => 'required|max:10240|type:jpg,jpeg'
+        ]);
+
+        // File validated; store it in the public/uploads directory.
+        $upload = request()->file('image');
+        if ($upload->store(PUBLIC_ROOT . '/uploads')) {
+            $name = $upload->getName();
+            ...
+        } else {
+            $errors = $upload->getErrors();
+        }
+    }
+}
+```
+
+Alternatively:
 ```php
 $upload = new FileUpload($_FILES['image']);
 ```
@@ -393,18 +423,13 @@ $upload->setOptions([
 ]);
 ```
 
-Attempt to upload the file, and get any error messages if it fails:
+Attempt to store the file, and get any error messages if it fails:
 ```php
 if ($upload->store(PUBLIC_ROOT . '/uploads')) {
     ...
 } else {
     $errors = $upload->getErrors();
 }
-```
-
-You can then get name with which the file was uploaded:
-```php
-$name = $upload->getName();
 ```
 
 The library throws an `Exception` if the destination directory exists but is not a valid, writeable directory; if the destination directory does not exist and fails to be created; and if you attempt to set a max size that exceeds the server limit specified in your php.ini file. These exceptions should be caught, so that the full usage would like something like:
@@ -439,26 +464,13 @@ Currently only a single file may be uploaded per FileUpload instance, and the li
 
 
 #### CSRF protection
-CSRF protection is made simple with the CSRF library, which should be used with all POST, PUT, PATCH, and DELETE requests. Simply include a hidden input in the form with a unique CSRF token:
+CSRF protection is built in to JWMVC; all incoming POST, PUT, PATCH and DELETE requests are checked for a valid CSRF token. This means that any forms within your application should include a hidden input field containing a CSRF token, which should be generated using the static `CSRF::generateInput()` method:
 
 ```php
 <form action="http://example.com/posts" method="POST">
-<?= CSRF::generateInput() ?>
-...
+    <?= CSRF::generateInput() ?>
+    ...
 </form>
-```
-
-Then be sure to check that the token was submitted with the form:
-```php
-class Posts extends Controller
-{
-    public function create()
-    {
-        if (CSRF::validateToken()) {
-            ...
-        }
-    }
-}
 ```
 
 
@@ -546,8 +558,4 @@ This will return `<p class="flash flash-success">I am the flash message</p>`, th
 Improvements planned for future updates to the framework:
 
 - Allow multiple files to be uploaded with one instance of the FileUpload library.
-- Add transactions to queries that effect multiple rows.
 - Database migrations.
-- Inbuilt CSRF protection for form validation.
-- Form helper library for easily handling display and submitting forms.
-- More form validation methods.

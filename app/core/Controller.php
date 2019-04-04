@@ -13,11 +13,16 @@ class Controller
      */
     protected static $auth_blacklist = [];
 
+    /** @var array $errors Array of errors retrieved from session. */
+    protected $errors;
 
     /** @var string $cacheFilename Name of file to store in cache. */
     protected $cacheFilename;
 
 
+    /**
+     * Cache output of controller when it has finished executing.
+     */
     public function __destruct()
     {
         $this->cacheOutput();
@@ -60,6 +65,11 @@ class Controller
             foreach ($data as $key => $value) {
                 $$key = $value;
             }
+            // Get errors from session and store on object for subsequent renders.
+            if (!isset($this->errors)) {
+                $this->errors = Session::getAndUnset('errors') ?? [];
+            }
+            $errors = $this->errors;
             // Load view.
             require_once APP_ROOT . "/views/{$view}.php";
         } else {
@@ -118,9 +128,9 @@ class Controller
     {
         $validator = new Validator($validations);
         if (!$validator->run()) {
-            Session::set('formValues', $_POST);
-            Session::set('formErrors', $validator->getErrors());
-            redirect('back');
+            request()->save();
+            Session::set('errors', $validator->getErrors());
+            back();
         }
     }
 }
