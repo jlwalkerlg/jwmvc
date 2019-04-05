@@ -241,15 +241,11 @@ class FileUpload
 
     /**
      * Check the file size is below max size.
-     *
-     * @return bool True if size is below max allowed size; false otherwise.
      */
-	public function checkMaxSize(int $maxSize = null)
+	public function checkMaxSize()
 	{
-        $maxSize = $maxSize ?? $this->maxSize;
-
-		if ($this->size > $maxSize) {
-			$this->errors['maxSize'] = 'File exceeds the maximum size (' . self::convertFromBytes($maxSize) . ').';
+		if ($this->size > $this->maxSize) {
+			$this->errors['maxSize'] = 'File exceeds the maximum size (' . self::convertFromBytes($this->maxSize) . ').';
 			return false;
 		}
         return true;
@@ -259,16 +255,13 @@ class FileUpload
     /**
      * Check file extension and corrseponding MIME type is in permitted array.
      *
-     * @param array $extensions List of permitted extensions.
      * @return bool True if file extension and corresponsing MIME type are permitted; false otherwise.
      */
-    public function checkType(array $extensions = null)
+    public function checkType()
     {
-        $permittedExtensions = $extensions ?? $this->permittedExtensions;
-
         // Check file extension is in the list of permitted extensions.
-        if (!in_array($this->extension, $permittedExtensions, true)) {
-            $this->errors['type'] = 'Extension must be one of the following: ' . implode(', ', $permittedExtensions) . '.';
+        if (!in_array($this->extension, $this->permittedExtensions, true)) {
+            $this->errors['type'] = 'Extension must be one of the following: ' . implode(', ', $this->permittedExtensions) . '.';
             return false;
         }
         // Check MIME type is known.
@@ -290,7 +283,7 @@ class FileUpload
      *
      * @return bool True if file is fit for upload; false otherwise.
      */
-	private function validate()
+	public function validate()
 	{
 		if (!$this->checkRequired()) {
 			return false;

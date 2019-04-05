@@ -202,8 +202,9 @@ class Validator
         $val = $this->input[$field];
 
         if ($val instanceof FileUpload) {
-            if (!$val->checkMaxSize($value)) {
-                $this->errors[$field] = 'Must not be greater than ' . $value . '.';
+            $val->setOptions(['maxSize' => $value]);
+            if (!$val->checkMaxSize()) {
+                $this->errors[$field] = $val->getError('maxSize');
                 return false;
             }
         }
@@ -274,7 +275,8 @@ class Validator
      * @return bool True if file extensions and MIME type is permitted; false otherwise.
      */
     private function type($field, ...$extensions) {
-        if (!$this->input[$field]->checkType($extensions)) {
+        $this->input[$field]->setOptions(['types' => $extensions]);
+        if (!$this->input[$field]->checkType()) {
             $this->errors[$field] = $this->input[$field]->getError('type');
             return false;
         }
