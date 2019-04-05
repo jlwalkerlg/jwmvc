@@ -46,14 +46,13 @@ class FileUpload
     /** @var bool $dirCreated Identifies whether a new directory was created for the file(s). */
     private $dirCreated = false;
 
-    /** @var array $permittedTypes Permitted mime types. */
+    /** @var array $permittedTypes Permitted MIME types and corrseponsing extensions. */
 	private $permittedTypes = [
-        'jpg' => ['image/jpeg', 'image/pjpeg'],
-        'jpeg' => ['image/jpeg', 'image/pjpeg'],
-        'gif' => ['image/gif'],
-        'png' => ['image/png'],
-        'svg' => ['image/svg+xml'],
-        'webp' => ['image/webp']
+        'image/jpeg' => ['jpg', 'jpeg'],
+        'image/gif' => ['gif'],
+        'image/png' => ['png'],
+        'image/svg' => ['svg'],
+        'image/webp' => ['webp']
     ];
 
     /** @var array $permittedExtensions Permitted extensions. */
@@ -268,13 +267,13 @@ class FileUpload
             $this->errors['type'] = 'Extension must be one of the following: ' . implode(', ', $permittedExtensions) . '.';
             return false;
         }
-        // Check valid MIME types for the given extension are known.
-        if (!array_key_exists($this->extension, $this->permittedTypes)) {
+        // Check MIME type is known.
+        if (!array_key_exists($this->type, $this->permittedTypes)) {
             $this->errors['type'] = 'MIME type not supported.';
             return false;
         }
         // Check the extension matches a known, valid MIME type.
-        if (!in_array($this->type, $this->permittedTypes[$this->extension])) {
+        if (!in_array($this->extension, $this->permittedTypes[$this->type])) {
             $this->errors['type'] = 'MIME type does not match its extension.';
             return false;
         }
