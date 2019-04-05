@@ -15,6 +15,20 @@ class Database
 
 
     /**
+     * Get database handle instance.
+     *
+     * Useful for beginning transactions etc.
+     *
+     * @return PDO PDO database handle instance.
+     */
+    public static function instance()
+    {
+        self::set_instance();
+        return self::$dbh;
+    }
+
+
+    /**
      * Store PDO instance on class if not already instantiated.
      */
     protected static function set_instance()
@@ -40,18 +54,5 @@ class Database
         } catch (PDOException $e) {
             exit('Failed to connect to database.');
         }
-    }
-
-    /**
-     * Get database handle instance.
-     *
-     * Useful for beginning transactions etc.
-     *
-     * @return PDO PDO database handle instance.
-     */
-    public static function get_instance()
-    {
-        self::set_instance();
-        return self::$dbh;
     }
 }
