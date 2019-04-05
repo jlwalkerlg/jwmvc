@@ -10,6 +10,9 @@ class FileUpload
     /** @var string $name Name of uploaded file, including extension. */
     private $name;
 
+    /** @var string $extension Extension of uploaded file. */
+    private $extension;
+
     /** @var string $type Type of uploaded file. */
     private $type;
 
@@ -24,6 +27,9 @@ class FileUpload
 
     /** @var string $destination Path to directory where file is to be saved. */
     private $destination;
+
+    /** @var int $upload_max_filesize Maximum size allowed by server for uploaded file in bytes. */
+    private $upload_max_filesize;
 
     /** @var int $maxSize Maximum size allowed for uploaded file in bytes. */
     private $maxSize;
@@ -65,10 +71,12 @@ class FileUpload
 	public function __construct(array $file)
 	{
         $upload_max_filesize = ini_get('upload_max_filesize');
-        $this->maxSize = self::convertToBytes($upload_max_filesize);
+        $this->upload_max_filesize = self::convertToBytes($upload_max_filesize);
+        $this->maxSize = $this->upload_max_filesize;
 
         $this->name = $file['name'];
-        $this->type = $file['type'];
+        $this->extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $this->type = mime_content_type($file['tmp_name']); // false on failure
         $this->tmp_name = $file['tmp_name'];
         $this->error = $file['error'];
         $this->size = $file['size'];
@@ -137,8 +145,7 @@ class FileUpload
      */
     private function setName(string $name)
     {
-        $extension = pathinfo($this->name, PATHINFO_EXTENSION);
-        $this->name = $name . '.' . $extension;
+        $this->name = $name . '.' . $this->extension;
     }
 
 
@@ -160,9 +167,8 @@ class FileUpload
      */
 	private function setMaxSize(int $bytes)
 	{
-		$upload_max_filesize = ini_get('upload_max_filesize');
-		if ($bytes > self::convertToBytes($upload_max_filesize)) {
-			throw new Exception('Maximum size cannot exceed server limit for individual files: ' . $upload_max_filesize);
+		if ($bytes > $this->upload_max_filesize) {
+			throw new Exception('Maximum size cannot exceed server limit for individual files: ' . self::convertFromBytes($this->upload_max_filesize));
 		}
 		if (is_numeric($bytes) && $bytes > 0) {
 			$this->maxSize = $bytes;
@@ -255,20 +261,20 @@ class FileUpload
      */
     public function checkType(array $extensions = null)
     {
-        $extensions = $extensions ?? $this->permittedExtensions;
+        $permittedExtensions = $extensions ?? $this->permittedExtensions;
 
-        $extension = pathinfo($this->name, PATHINFO_EXTENSION);
-        $type = $this->type;
-
-        if (!in_array($extension, $extensions, true)) {
-            $this->errors['type'] = 'Extension must be one of the following: ' . implode(', ', $extensions) . '.';
+        // Check file extension is in the list of permitted extensions.
+        if (!in_array($this->extension, $permittedExtensions, true)) {
+            $this->errors['type'] = 'Extension must be one of the following: ' . implode(', ', $permittedExtensions) . '.';
             return false;
         }
-        if (!array_key_exists($extension, $this->permittedTypes)) {
+        // Check valid MIME types for the given extension are known.
+        if (!array_key_exists($this->extension, $this->permittedTypes)) {
             $this->errors['type'] = 'MIME type not supported.';
             return false;
         }
-        if (!in_array($type, $this->permittedTypes[$extension])) {
+        // Check the extension matches a known, valid MIME type.
+        if (!in_array($this->type, $this->permittedTypes[$this->extension])) {
             $this->errors['type'] = 'MIME type does not match its extension.';
             return false;
         }
@@ -292,9 +298,6 @@ class FileUpload
         if (!$this->checkType()) {
             return false;
         }
-        if (!$this->checkType()) {
-            return false;
-        }
 		return true;
     }
 
@@ -314,13 +317,11 @@ class FileUpload
             // If the file name already exists in the destination directory...
 			if (in_array($this->name, $existing, true)) {
                 // Get different parts of the file name to be used in renaming.
-                $nameparts = pathinfo($this->name);
-                $filename = $nameparts['filename'];
-                $extension = $nameparts['extension'];
+                $filename = pathinfo($this->name, PATHINFO_FILENAME);
                 // Rename file with number until file name is unique.
 				$i = 1;
 				do {
-					$this->name = $filename . '_' . $i++ . '.' . $extension;
+					$this->name = $filename . '_' . $i++ . '.' . $this->extension;
 				} while (in_array($this->name, $existing, true));
 			}
 		}
@@ -337,13 +338,12 @@ class FileUpload
 
         // Get filename (without extension) and extension.
         $filename = pathinfo($this->name, PATHINFO_FILENAME);
-        $extension = pathinfo($this->name, PATHINFO_EXTENSION);
 
         // Remove any invalid characters.
         $filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '', $filename);
 
         // Save filtered file name.
-        $this->name = $filename . '.' . $extension;
+        $this->name = $filename . '.' . $this->extension;
     }
 
 
