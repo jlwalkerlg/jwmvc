@@ -289,7 +289,7 @@ class Validator
      * @param mixed $field Name of field to check.
      * @return bool True if file extensions and MIME type is permitted; false otherwise.
      */
-    private function type($field, ...$extensions) {
+    private function types($field, ...$extensions) {
         $this->input[$field]->setOptions(['types' => $extensions]);
         if (!$this->input[$field]->checkType()) {
             $this->errors[$field] = $this->input[$field]->getError('type');
