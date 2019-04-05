@@ -468,6 +468,10 @@ class FileUpload
     public static function upload(array $files, string $destination, array $options = null)
     {
         $request = request();
+        // Reset arrays containing uploaded files.
+        self::$uploaded = [];
+        self::$uploadedNames = [];
+        self::$uploadedErrors = [];
         try {
             foreach ($files as $name) {
                 $file = $request->file($name);
