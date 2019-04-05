@@ -65,6 +65,21 @@ class Validator
         // to validate it with.
         // $validations as ['email'] = ['min' => '6', 'max' => '10']
         foreach ($this->validations as $field => $rules) {
+            // Store variable indicating if the field is required.
+            // If not, first check if the input has been submitted.
+            // If it was not submitted, don't run the other validations
+            // for the current field; instead, skip to the next field.
+            $required = array_key_exists('required', $rules);
+            if (!$required) {
+                $present = $this->required($field);
+                if (!$present) {
+                    // Required method will add to errors array; however,
+                    // if the field was not required and is not present, there
+                    // should not be an error.
+                    unset($this->errors[$field]);
+                    continue;
+                }
+            }
             // Get the name of the validation function to run and
             // the parameters to use.
             // $rules as 'min' => '6'
