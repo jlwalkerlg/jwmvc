@@ -442,5 +442,87 @@ class FileUpload
 			return number_format($bytes / 1024, 1) . ' MB';
 		}
         return number_format($bytes, 1) . ' KB';
-	}
+    }
+
+
+    /** @var array $uploaded Array of files successfully uploaded with FileUpload::upload(). */
+    private static $uploaded = [];
+
+    /** @var array $uploadedErrors Array of errors from files uploaded with FileUpload::upload(). */
+    private static $uploadedErrors = [];
+
+    /** @var array $uploadedNames Array of file names uploaded with FileUpload::upload(). */
+    private static $uploadedNames = [];
+
+
+    /**
+     * Upload multiple files at once.
+     *
+     * All files must be successfully stored for this method to
+     * return true. If any file fails, all previously stored files
+     * are deleted.
+     *
+     * @param array $files Array of uploaded file names.
+     * @param string $destination Destination directory to store files.
+     * @param array $options Array of options to set for all files.
+     * @return bool True on success; false on failure.
+     * @throws Exception Re-throws any exceptions after deleting successfully uploaded files.
+     */
+    public static function upload(array $files, string $destination, array $options = null)
+    {
+        $request = request();
+        try {
+            foreach ($files as $name) {
+                $file = $request->file($name);
+                $file->setOptions($options);
+                if ($file->store($destination)) {
+                    array_unshift(self::$uploaded, $file);
+                    self::$uploadedNames[$name] = $file->getName();
+                } else {
+                    self::deleteUploaded();
+                    self::$uploadedErrors[$name] = $file->getErrors('move');
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception $e) {
+            self::deleteUploaded();
+            throw $e;
+        }
+    }
+
+    /**
+     * Delete all files uploaded with FileUpload::upload().
+     */
+    private static function deleteUploaded()
+    {
+        foreach (self::$uploaded as $file) {
+            $file->delete();
+        }
+    }
+
+
+    /**
+     * Retrieve name of file stored with FileUpload::upload().
+     *
+     * @param string $name $_FILES array key for uploaded file.
+     * @return string Name with which file was stored.
+     */
+    public static function getUploadedName(string $name)
+    {
+        return self::$uploadedNames[$name];
+    }
+
+    /**
+     * Retrieve array of errors from files uploaded with FileUpload::upload().
+     *
+     * Keys are keys used to grab files from $_FILES array; values are
+     * move error messages.
+     *
+     * @return array Array of errors.
+     */
+    public static function getUploadedErrors()
+    {
+        return self::$uploadedErrors;
+    }
 }
