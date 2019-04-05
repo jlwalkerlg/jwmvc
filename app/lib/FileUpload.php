@@ -112,17 +112,21 @@ class FileUpload
 
 
     /**
-     * Retrieve errors array, or a specific error message.
+     * Retrieve errors message.
+     *
+     * If a string is given, the error message for the validation
+     * corrseponding to the given key will be returned.
+     * If no string is given, the first error message will be returned.
      *
      * @param string $key Key of error to return.
-     * @return array Array of errors.
+     * @return string Error message.
      */
-	public function getErrors(string $key = null)
+	public function getError(string $key = null)
 	{
         if (isset($key) && array_key_exists($key, $this->errors)) {
             return $this->errors[$key];
         }
-		return $this->errors;
+		return reset($this->errors);
     }
 
 
@@ -480,7 +484,7 @@ class FileUpload
                     self::$uploadedNames[$name] = $file->getName();
                 } else {
                     self::deleteUploaded();
-                    self::$uploadedErrors[$name] = $file->getErrors('move');
+                    self::$uploadedErrors[$name] = $file->getError();
                     return false;
                 }
             }

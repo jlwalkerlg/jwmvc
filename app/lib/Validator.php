@@ -110,7 +110,7 @@ class Validator
         }
         elseif ($this->input[$field] instanceof FileUpload) {
             if (!$this->input[$field]->checkRequired()) {
-                $this->errors[$field] = $this->input[$field]->getErrors('required');
+                $this->errors[$field] = $this->input[$field]->getError('required');
                 return false;
             }
         }
@@ -275,7 +275,7 @@ class Validator
      */
     private function type($field, ...$extensions) {
         if (!$this->input[$field]->checkType($extensions)) {
-            $this->errors[$field] = $this->input[$field]->getErrors('type');
+            $this->errors[$field] = $this->input[$field]->getError('type');
             return false;
         }
         return true;
