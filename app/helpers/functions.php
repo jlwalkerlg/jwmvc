@@ -160,6 +160,38 @@ function render(string $view, array $data = [])
 
 
 /**
+ * Authorization helper.
+ *
+ * @param string $method Name of method to run on relevant policy class.
+ * @param mixed $model Model instance, or name of model class.
+ * @param User $user User instance to send to policy method.
+ * @return bool True if authorized; false otherwise.
+ * @throws Exception Exception thrown if policy not found.
+ */
+function can(string $method, $model, User $user = null) {
+    if (!Auth::isLoggedIn()) return false;
+    if (is_string($model)) {
+        $policyClass = $model . 'Policy';
+    } else {
+        $policyClass = get_class($model) . 'Policy';
+    }
+    if (!file_exists(APP_ROOT . "/policies/{$policyClass}.php")) {
+        throw new Exception('Policy not found.');
+    }
+    require_once APP_ROOT . "/policies/{$policyClass}.php";
+    if (!method_exists($policyClass, $method)) {
+        throw new Exception('Policty method does not exist.');
+    }
+    $user = $user ?? Auth::user();
+    if (is_string($model)) {
+        return $policyClass::$method($user);
+    }
+    return $policyClass::$method($user, $model);
+}
+
+
+
+/**
  * Show 404 not found page and kill script.
  **/
 function show_404() {
