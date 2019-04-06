@@ -74,8 +74,7 @@ class Controller
      */
     protected function cache(int $duration = 60 * 60 * 24)
     {
-        $callback = Router::getCallback();
-        $filename = str_replace('\\', '_', $callback);
+        $filename = Router::getCallback();
         $this->cacheFilename = $filename . '.' . $duration .  '.html';
     }
 

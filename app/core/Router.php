@@ -19,6 +19,10 @@ class Router
     ];
 
 
+    /** @var Route $route Matching route for the request. */
+    private static $route;
+
+
     /** @var string $cachedFile Name of cached file.
      *
      * Set if the URL requests a controller method which has previously
@@ -52,6 +56,9 @@ class Router
         // Check if any routes match the URL.
         foreach ($routes as $route) {
             if (preg_match($route->getRoute(), $url, $params)) {
+                // Store route as static property.
+                self::$route = $route;
+
                 // Take URL out of $params array, leaving only regex captured groups.
                 // This array can then be passed to the relevant action as parameters.
                 array_shift($params);
@@ -141,6 +148,7 @@ class Router
     public static function serveFromCache()
     {
         require_once APP_ROOT . '/cache/' . basename(self::$cachedFile);
+        dnd('hi');
     }
 
 
@@ -149,6 +157,6 @@ class Router
      */
     public static function getCallback()
     {
-        return self::$callback;
+        return self::$route->getCallback();
     }
 }
