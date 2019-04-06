@@ -26,6 +26,9 @@ class Request
     /** @var array $old All input fields saved from previous request. */
     private $old;
 
+    /** @var array $errors Array of errors from previous request. */
+    private $errors;
+
 
     /**
      * Get instance.
@@ -63,8 +66,12 @@ class Request
         foreach ($_FILES as $key => $file) {
             $this->files[$key] = new FileUpload($file);
         }
+
         // Store all old input.
         $this->old = Session::getAndUnset('old');
+
+        // Store any errors from previous request.
+        $this->errors = Session::getAndUnset('errors') ?? [];
     }
 
 
@@ -220,5 +227,14 @@ class Request
     public function getUrl()
     {
         return $this->url;
+    }
+
+
+    /**
+     * Retrieve errors from previous request.
+     */
+    public function getErrors()
+    {
+        return $this->errors;
     }
 }

@@ -12,9 +12,9 @@ class Home extends Controller
     {
         $data['title'] = 'Welcome';
 
-        $this->render('includes/header', $data);
-        $this->render('includes/nav', $data);
-        $this->render('pages/index', $data);
-        $this->render('includes/footer', $data);
+        render('includes/header', $data);
+        render('includes/nav', $data);
+        render('pages/index', $data);
+        render('includes/footer', $data);
     }
 }

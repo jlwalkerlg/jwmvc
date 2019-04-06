@@ -131,6 +131,35 @@ function old($field = null) {
 
 
 /**
+ * Render view.
+ *
+ * Pass data to view and output to HTML. Values in data array are
+ * converted to their own variables. E.g. $data['title'] => 'Welcome'
+ * will be passed to the view as $title = 'Welcome'.
+ *
+ * @param string $view Name of view, relative to app/views directory.
+ * @param array $data Array of data to pass to view.
+ */
+function render(string $view, array $data = [])
+{
+    // Check for view file.
+    if (file_exists(APP_ROOT . "/views/{$view}.php")) {
+        // Convert data values to variable variables.
+        foreach ($data as $key => $value) {
+            $$key = $value;
+        }
+        // Get errors from session and store on Session class.
+        // for subsequent renders.
+        $errors = request()->getErrors();
+        // Load view.
+        require_once APP_ROOT . "/views/{$view}.php";
+    } else {
+        throw new Exception('View not found.');
+    }
+}
+
+
+/**
  * Show 404 not found page and kill script.
  **/
 function show_404() {
