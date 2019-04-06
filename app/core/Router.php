@@ -141,7 +141,6 @@ class Router
     public static function serveFromCache()
     {
         require_once APP_ROOT . '/cache/' . basename(self::$cachedFile);
-        exit;
     }
 
 
