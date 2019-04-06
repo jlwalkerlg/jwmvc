@@ -23,6 +23,10 @@ class Router
     private static $route;
 
 
+    /** @var string $cacheFilename Name of file to cache. */
+    private static $cacheFilename;
+
+
     /** @var string $cachedFile Name of cached file.
      *
      * Set if the URL requests a controller method which has previously
@@ -73,6 +77,11 @@ class Router
                     Session::set('back', $url);
                 }
 
+                // Cache output if requested.
+                if (isset(self::$cacheFilename)) {
+                    self::cacheOutput();
+                }
+
                 // If route was found, exit script after running appropriate callback.
                 exit;
             }
@@ -92,6 +101,30 @@ class Router
     public static function registerRoute(string $method, Route $route)
     {
         self::$routes[$method][] = $route;
+    }
+
+
+    /**
+     * Tell router to cache output when
+     */
+    public static function cache(int $duration = 60 * 60 * 24)
+    {
+        $filename = self::$route->getCallback();
+        self::$cacheFilename = $filename . '.' . $duration .  '.html';
+    }
+
+
+    /**
+     * Cache output for the given duration.
+     *
+     * Check if $cacheFilename is set and if so, cache output
+     * with the name $cacheFilename.html in the /app/cache directory.
+     **/
+    private static function cacheOutput()
+    {
+        // Get basename before saving for security.
+        $filename = basename(self::$cacheFilename);
+        file_put_contents(APP_ROOT . "/cache/$filename", ob_get_contents());
     }
 
 
@@ -148,15 +181,5 @@ class Router
     public static function serveFromCache()
     {
         require_once APP_ROOT . '/cache/' . basename(self::$cachedFile);
-        dnd('hi');
-    }
-
-
-    /**
-     * Get callback (Controller@action) registered for matching route
-     */
-    public static function getCallback()
-    {
-        return self::$route->getCallback();
     }
 }

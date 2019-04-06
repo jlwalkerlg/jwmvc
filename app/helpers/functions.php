@@ -190,6 +190,13 @@ function can(string $method, $model, User $user = null) {
 }
 
 
+/**
+ * Cache output.
+ */
+function cache(int $duration = null) {
+    Router::cache($duration);
+}
+
 
 /**
  * Show 404 not found page and kill script.
