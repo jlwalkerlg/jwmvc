@@ -86,4 +86,123 @@ class Route
         $regex = '('.$regex.')';
         $this->route = str_replace($param, $regex, $this->route);
     }
+
+
+    /**
+     * Register route for GET requests.
+     *
+     * @param string $route URL to match before calling callback
+     * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
+     */
+    public static function get(string $route, string $callback)
+    {
+        $route = new self($route, $callback);
+        Router::registerRoute('GET', $route);
+        return $route;
+    }
+
+
+    /**
+     * Register route for POST requests.
+     *
+     * @param string $route URL to match before calling callback
+     * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
+     */
+    public static function post(string $route, string $callback)
+    {
+        $route = new self($route, $callback);
+        Router::registerRoute('POST', $route);
+        return $route;
+    }
+
+
+    /**
+     * Register route for PUT requests.
+     *
+     * @param string $route URL to match before calling callback
+     * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
+     */
+    public static function put(string $route, string $callback)
+    {
+        $route = new self($route, $callback);
+        Router::registerRoute('PUT', $route);
+        return $route;
+    }
+
+
+    /**
+     * Register route for PATCH requests.
+     *
+     * @param string $route URL to match before calling callback
+     * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
+     */
+    public static function patch(string $route, string $callback)
+    {
+        $route = new self($route, $callback);
+        Router::registerRoute('PATCH', $route);
+        return $route;
+    }
+
+
+    /**
+     * Register route for DELETE requests.
+     *
+     * @param string $route URL to match before calling callback
+     * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
+     */
+    public static function delete(string $route, string $callback)
+    {
+        $route = new self($route, $callback);
+        Router::registerRoute('DELETE', $route);
+        return $route;
+    }
+
+
+    /**
+     * Register routes for a number of request methods.
+     *
+     * @param array $verbs List of HTTP verbs with which to register the route
+     * @param string $route URL to match before calling callback
+     * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
+     */
+    public static function match(array $verbs, string $route, string $callback)
+    {
+        $route = new self($route, $callback);
+        foreach ($verbs as $verb) {
+            $verb = strtoupper($verb);
+            Router::registerRoute($verb, $route);
+        }
+        return $route;
+    }
+
+
+    /**
+     * Register route for all request methods.
+     *
+     * @param string $route URL to match before calling callback
+     * @param string $callback Controller@action to call if URL matches $route
+     *
+     * @return Route Instance of the Route class.
+     */
+    public static function any(string $route, string $callback)
+    {
+        $route = new self($route, $callback);
+        $verbs = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+        foreach ($verbs as $verb) {
+            Router::registerRoute($verb, $route);
+        }
+        return $route;
+    }
 }
