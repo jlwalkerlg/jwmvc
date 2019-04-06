@@ -140,15 +140,6 @@ function show_404() {
 
 
 /**
- * Redirected unauthenticated users and flash error message.
- */
-function denyAuthRestricted() {
-    Session::flash('error', 'Must be logged in.');
-    redirect('/login');
-}
-
-
-/**
  * Return hidden HTML input field for spoofing HTTP verbs.
  *
  * @param string $verb HTTP verb to spoof.
@@ -159,16 +150,14 @@ function spoofMethod(string $verb) {
 
 
 /**
- * Convert namespaced class into a path.
+ * Return form validation error message for a given field.
  *
- * @param string $class Class namespace to be converted.
- * @return string Path in lowercase with uppercased first letter of class.
+ * @param string $msg Error message to display.
+ * @return string Error message as HTML output.
  */
-function namespaceToPath($class) {
-    $pathParts = explode('\\', $class);
-    $className = array_pop($pathParts);
-    $className = ucfirst($className);
-    array_push($pathParts, $className);
-    $path = strtolower(implode('/', $pathParts));
-    return $path;
+function formError(string $msg)
+{
+    if (trim($msg) === '') return;
+    $html = '<p class="form-error">' . h($msg) . '</p>';
+    return $html;
 }

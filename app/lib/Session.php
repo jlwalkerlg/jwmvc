@@ -56,46 +56,6 @@ class Session
 
 
     /**
-     * Check if user is logged in.
-     *
-     * @return bool True if user is logged in; false otherwise.
-     */
-    public static function isLoggedIn()
-    {
-        return isset($_SESSION['user_id']);
-    }
-
-
-    /**
-     * Log user in.
-     *
-     * Regenerates session ID, then logs user in by
-     * setting their ID and the login time in the session.
-     *
-     * @param object $user User object.
-     */
-    public static function login(object $user)
-    {
-        session_regenerate_id();
-        self::set('user_id', $user->id);
-        self::set('login_time', time());
-    }
-
-
-    /**
-     * Log user out.
-     *
-     * Logs user out by deleting their ID from the
-     * session, as well as their login time.
-     */
-    public static function logout()
-    {
-        self::unset('user_id');
-        self::unset('login_time');
-    }
-
-
-    /**
      * Flash session message, or set message to be flashed.
      *
      * If called without any arguments, any flash message stored

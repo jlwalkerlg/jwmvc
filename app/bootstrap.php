@@ -11,13 +11,12 @@ require_once PROJECT_ROOT . '/vendor/autoload.php';
 
 // Autoload classes from lib or core directory.
 function my_autoload($class) {
-    $path = namespaceToPath($class);
-    if (file_exists(APP_ROOT . "/lib/{$path}.php")) {
-        require_once APP_ROOT . "/lib/{$path}.php";
-    } elseif (file_exists(APP_ROOT . "/core/{$path}.php")) {
-        require_once APP_ROOT . "/core/{$path}.php";
-    } elseif (file_exists(APP_ROOT . "/models/{$path}.php")) {
-        require_once APP_ROOT . "/models/{$path}.php";
+    if (file_exists(APP_ROOT . "/lib/{$class}.php")) {
+        require_once APP_ROOT . "/lib/{$class}.php";
+    } elseif (file_exists(APP_ROOT . "/core/{$class}.php")) {
+        require_once APP_ROOT . "/core/{$class}.php";
+    } elseif (file_exists(APP_ROOT . "/models/{$class}.php")) {
+        require_once APP_ROOT . "/models/{$class}.php";
     }
 }
 spl_autoload_register('my_autoload');

@@ -5,14 +5,6 @@
  */
 class Controller
 {
-    /** @var array $auth_blacklist List of all methods.
-     *
-     * List of all methods on current controller to restrict to
-     * authenticated (logged in) users only. Gets checked by the router
-     * before calling the method.
-     */
-    protected static $auth_blacklist = [];
-
     /** @var array $errors Array of errors retrieved from session. */
     protected $errors;
 
@@ -37,10 +29,8 @@ class Controller
      */
     public function model(string $model)
     {
-        $path = namespaceToPath($model);
-
         // Require model.
-        require_once APP_ROOT . "/models/{$path}.php";
+        require_once APP_ROOT . "/models/{$model}.php";
 
         // Instantiate model.
         return new $model;
@@ -103,15 +93,6 @@ class Controller
             $this->cacheFilename = basename($this->cacheFilename);
             file_put_contents(APP_ROOT . '/cache/' . $this->cacheFilename, ob_get_contents());
         }
-    }
-
-
-    /**
-     * Get list of methods on current controller restricted to authenticated users.
-     */
-    public static function getAuthBlacklist()
-    {
-        return static::$auth_blacklist;
     }
 
 

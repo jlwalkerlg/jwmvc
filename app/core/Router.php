@@ -19,13 +19,6 @@ class Router
     ];
 
 
-    /** @var string $callback Controller and method to call.
-     *
-     * Set when the URL is parsed and is matched with a registered route.
-     */
-    private static $callback;
-
-
     /** @var string $cachedFile Name of cached file.
      *
      * Set if the URL requests a controller method which has previously
@@ -53,64 +46,25 @@ class Router
             show_404();
         }
 
-        // Get reference relevant sub-array in routes array.
+        // Get reference to relevant sub-array in routes array.
         $routes =& self::$routes[$requestMethod];
 
         // Check if any routes match the URL.
         foreach ($routes as $route) {
             if (preg_match($route->getRoute(), $url, $params)) {
+                // Take URL out of $params array, leaving only regex captured groups.
+                // This array can then be passed to the relevant action as parameters.
+                array_shift($params);
+
+                // Run middleware registered to route.
+                $route->runCallback($params);
+
                 // If GET request matches a registered route,
                 // store url in session to allow redirecting back in
                 // from the next request (e.g. for processing invalid forms).
                 if ($request->isGet()) {
                     Session::set('back', $url);
                 }
-
-                // Get callback (Controller@action) registered to route.
-                $callback = $route->getCallback();
-
-                // Store callback as a static class property.
-                self::$callback = $callback;
-
-                // If file is in cache and is not expired, serve immediately.
-                if (self::checkCache()) {
-                    self::serveFromCache();
-                }
-
-                // Take URL out of $params array, leaving only regex captured groups.
-                // This array can then be passed to the relevant method as parameters.
-                array_shift($params);
-
-                // Parse callback for controller and method.
-                $atIndex = strpos($callback, '@');
-                $controller = substr($callback, 0, $atIndex);
-                $method = substr($callback, $atIndex + 1);
-
-                // Get path to controller relative to app/controllers directory.
-                // If controller is nested in a subdirectory, it should be defined
-                // in the routes with backslashes.
-                $controllerPath = namespaceToPath($controller);
-
-                // Load controller.
-                require_once APP_ROOT . "/controllers/$controllerPath.php";
-
-                // Get controller name from end of namespace.
-                $controller = explode('\\', $controller);
-                $controller = end($controller);
-
-                // Instantiate controller.
-                $controller = new $controller($request);
-
-                // Check if method is restricted to authenticated users.
-                if (in_array($method, $controller::getAuthBlacklist(), true)) {
-                    // Deny access if method is restricted and user is not authenticated.
-                    if (!Session::isLoggedIn()) {
-                        denyAuthRestricted();
-                    }
-                }
-
-                // Call controller method, passing in any params.
-                call_user_func_array([$controller, $method], $params);
 
                 // If route was found, exit script after running appropriate callback.
                 exit;
@@ -146,11 +100,12 @@ class Router
      *
      * If an appropriate file is found, it is stored on the class.
      *
+     * @param string $callback Callback to check cache output for.
      * @return bool True if file found and not outdated; false otherwise.
      */
-    private static function checkCache()
+    public static function checkCache(string $callback)
     {
-        $callback = str_replace('\\', '_', self::$callback);
+        $callback = str_replace('\\', '_', $callback);
         $pattern = '/' . $callback . '(\.[0-9]+)?\.html/';
         $cachedFiles = scandir(APP_ROOT . '/cache/');
 
@@ -183,7 +138,7 @@ class Router
     /**
      * Served cached file.
      */
-    private static function serveFromCache()
+    public static function serveFromCache()
     {
         require_once APP_ROOT . '/cache/' . basename(self::$cachedFile);
         exit;
