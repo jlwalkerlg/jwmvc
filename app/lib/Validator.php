@@ -2,8 +2,8 @@
 
 class Validator
 {
-    /** @var array $input Input fields to run validations against. */
-    private $input;
+    /** @var Request $request Request instance. */
+    private $request;
 
 
     /** @var array $validations Validations to run against input. */
@@ -21,11 +21,8 @@ class Validator
      */
     public function __construct(array $validations)
     {
-        // Get all files from request.
-        $files = request()->file();
-
-        // Store input fields on object.
-        $this->input = array_merge($_POST, $files);
+        // Store request on object.
+        $this->request = request();
 
         // $validations as ['username' => 'min:6|max:10']
         foreach ($validations as $field => $rules) {
@@ -116,18 +113,18 @@ class Validator
      */
     private function required($field)
     {
-        if (!isset($this->input[$field])) {
+        if (!is_null($this->request->input($field))) {
             $this->errors[$field] = 'Required.';
             return false;
         }
-        elseif ($this->input[$field] instanceof FileUpload) {
-            if (!$this->input[$field]->checkRequired()) {
-                $this->errors[$field] = $this->input[$field]->getError('required');
+        elseif ($this->request->input($field) instanceof FileUpload) {
+            if (!$this->request->input($field)->checkRequired()) {
+                $this->errors[$field] = $this->request->input($field)->getError('required');
                 return false;
             }
         }
         else {
-            if (trim($this->input[$field]) === '') {
+            if (trim($this->request->input($field)) === '') {
                 $this->errors[$field] = 'Required.';
                 return false;
             }
@@ -148,12 +145,12 @@ class Validator
     {
         if ($ignoreKey !== false) {
             $count = DB::table($table)->where([
-                [$field, $this->input[$field]],
+                [$field, $this->request->input($field)],
                 [$primaryKey, '!=', $ignoreKey]
             ])->count();
         } else {
             $count = DB::table($table)->where([
-                [$field, $this->input[$field]]
+                [$field, $this->request->input($field)]
             ])->count();
         }
         if ($count > 0) {
@@ -172,7 +169,7 @@ class Validator
      */
     private function format($field, string $format)
     {
-        $val = $this->input[$field];
+        $val = $this->request->input($field);
 
         if ($format === 'email' && filter_var($val, FILTER_VALIDATE_EMAIL) === false) {
             $this->errors[$field] = 'Invalid email.';
@@ -211,7 +208,7 @@ class Validator
      */
     private function max($field, $value)
     {
-        $val = $this->input[$field];
+        $val = $this->request->input($field);
 
         if ($val instanceof FileUpload) {
             $val->setOptions(['maxSize' => $value]);
@@ -227,7 +224,7 @@ class Validator
             }
         }
         else {
-            if (strlen($this->input[$field]) > $value) {
+            if (strlen($this->request->input($field)) > $value) {
                 $this->errors[$field] = 'Must not be longer than ' . $value . ' characters.';
                 return false;
             }
@@ -245,7 +242,7 @@ class Validator
      */
     private function min($field, $value)
     {
-        $val = $this->input[$field];
+        $val = $this->request->input($field);
 
         if (is_numeric($val)) {
             if (floatval($val) < $value) {
@@ -254,7 +251,7 @@ class Validator
             }
         }
         else {
-            if (strlen($this->input[$field]) < $value) {
+            if (strlen($this->request->input($field)) < $value) {
                 $this->errors[$field] = 'Must not be shorter than ' . $value . ' characters.';
                 return false;
             }
@@ -272,7 +269,7 @@ class Validator
      */
     private function matches($field, $fieldToMatch)
     {
-        if ($this->input[$field] !== $this->input[$fieldToMatch]) {
+        if ($this->request->input($field) !== $this->request->input($fieldToMatch)) {
             $this->errors[$field] = 'Must match ' . $fieldToMatch . '.';
             return false;
         }
@@ -287,9 +284,9 @@ class Validator
      * @return bool True if file extensions and MIME type is permitted; false otherwise.
      */
     private function types($field, ...$extensions) {
-        $this->input[$field]->setOptions(['types' => $extensions]);
-        if (!$this->input[$field]->checkType()) {
-            $this->errors[$field] = $this->input[$field]->getError('type');
+        $this->request->input($field)->setOptions(['types' => $extensions]);
+        if (!$this->request->input($field)->checkType()) {
+            $this->errors[$field] = $this->request->input($field)->getError('type');
             return false;
         }
         return true;
