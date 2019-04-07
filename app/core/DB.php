@@ -95,19 +95,6 @@ class DB extends Database
 
 
     /**
-     * Specify name of model with which to instantiate records before returning.
-     *
-     * @param string $model Name of model
-     * @return DB Same query builder
-     */
-    public function return(string $model)
-    {
-        $this->model = $model;
-        return $this;
-    }
-
-
-    /**
      * Store select statements on query builder object.
      *
      * @param string $columns Columns to grab from table(s)
@@ -407,9 +394,10 @@ class DB extends Database
     /**
      * Query database and retrieve all results.
      *
+     * @param string $model Optional name of class to instantiate returned records as.
      * @return array Array of results as model instances, or stdClass objects.
      */
-    public function get()
+    public function get(string $model = null)
     {
         $this->buildSelect();
         $this->buildJoin();
@@ -418,22 +406,23 @@ class DB extends Database
         $this->buildLimit();
         $this->buildOffset();
         $this->execute();
-        if (!isset($this->model)) {
+        if (!isset($model)) {
             return $this->sth->fetchAll();
         }
-        return $this->sth->fetchAll(PDO::FETCH_CLASS, $this->model);
+        return $this->sth->fetchAll(PDO::FETCH_CLASS, $model);
     }
 
 
     /**
      * Query database and retrieve first result.
      *
+     * @param string $model Optional name of class to instantiate returned records as.
      * @return object Result as a model instance, or stdClass object.
      */
-    public function first()
+    public function first(string $model = null)
     {
         $this->limit(1);
-        $results = $this->get();
+        $results = $this->get($model);
         return array_shift($results);
     }
 

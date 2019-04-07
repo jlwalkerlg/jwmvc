@@ -40,13 +40,13 @@ class Model
     public static function find($values)
     {
         if (!is_array($values)) {
-            return DB::table(static::$table)->return(get_called_class())->where(static::$primaryKey, $values)->first();
+            return DB::table(static::$table)->where(static::$primaryKey, $values)->first(static::class);
         }
         $orWhere = [];
         foreach ($values as $value) {
             $orWhere[] = [static::$primaryKey, $value];
         }
-        return DB::table(static::$table)->return(get_called_class())->orWhere($orWhere)->get();
+        return DB::table(static::$table)->orWhere($orWhere)->get(static::class);
     }
 
 
@@ -57,19 +57,7 @@ class Model
      */
     public static function all()
     {
-        return DB::table(static::$table)->return(get_called_class())->get();
-    }
-
-
-    /**
-     * Add where clause to query builder and set it to
-     * return instances of the model.
-     *
-     * @return DB Query builder instance
-     */
-    public static function where(...$params)
-    {
-        return DB::table(static::$table)->return(get_called_class())->where(...$params);
+        return DB::table(static::$table)->get(static::class);
     }
 
 
