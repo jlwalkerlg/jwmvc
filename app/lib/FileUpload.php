@@ -75,7 +75,11 @@ class FileUpload
 
         $this->name = $file['name'];
         $this->extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $this->type = mime_content_type($file['tmp_name']); // false on failure
+        if (!$file['tmp_name']) {
+            $this->type = '';
+        } else {
+            $this->type = mime_content_type($file['tmp_name']); // false on failure
+        }
         $this->tmp_name = $file['tmp_name'];
         $this->error = $file['error'];
         $this->size = $file['size'];
