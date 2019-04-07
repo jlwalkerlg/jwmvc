@@ -78,7 +78,7 @@ class Route
     public function runMiddleware()
     {
         if (isset($this->middleware)) {
-            $middleware = ucfirst($this->middleware);
+            $middleware = ucfirst($this->middleware) . 'Middleware';
             if (!file_exists(APP_ROOT . "/middleware/$middleware.php")) {
                 throw new Exception('Middleware not found.');
             }
