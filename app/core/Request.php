@@ -64,7 +64,21 @@ class Request
 
         // Instantiate and store uploaded files.
         foreach ($_FILES as $key => $file) {
-            $this->files[$key] = new FileUpload($file);
+            if (is_array($file['name'])) {
+                $fileCount = count($file['name']);
+                for ($i=0; $i < $fileCount; $i++) {
+                    $subfile = [
+                        'name' => $file['name'][$i],
+                        'type' => $file['type'][$i],
+                        'tmp_name' => $file['tmp_name'][$i],
+                        'error' => $file['error'][$i],
+                        'size' => $file['size'][$i]
+                    ];
+                    $this->files[$key][] = new FileUpload($subfile);
+                }
+            } else {
+                $this->files[$key] = new FileUpload($file);
+            }
         }
 
         // Store all old input.
@@ -134,24 +148,53 @@ class Request
      * If an array is given, an array of items corrseponding to each
      * array element is returned.
      *
+     * @param string $arr Array from which to retrieve item(s) from.
      * @param mixed $field Key(s) corresponding to the item(s) to retrieve.
      * @return mixed Item(s) from relevant array, or null if not found.
      **/
-    private function retrieve($arr, $field = null)
+    private function retrieve(string $arr, $field = null)
     {
         if (!isset($field)) {
             return $this->$arr;
         }
         if (is_string($field)) {
-            return $this->$arr[$field] ?? null;
+            if (strpos($field, '.') !== false) {
+                return $this->retrieveNested($arr, $field);
+            } else {
+                return $this->$arr[$field] ?? null;
+            }
         }
         if (is_array($field)) {
             $result = [];
             foreach ($field as $key) {
+                if (strpos($field, '.') !== false) {
+                    $result[] = $this->retrieveNested($arr, $key);
+                } else {
+                    $result[] = $this->$arr[$key] ?? null;
+                }
                 $result[] = $this->$arr[$key] ?? null;
             }
             return $result;
         }
+    }
+
+
+    /**
+     * Retrieve nested field from array.
+     *
+     * @param string $arr Array from which to retrieve item(s) from.
+     * @param mixed $field Keys corresponding to the item(s) to retrieve, nested with dot notation.
+     * @return mixed Item(s) from relevant array, or null if not found.
+     */
+    private function retrieveNested(string $arr, string $fields)
+    {
+        $keys = explode('.', $fields);
+        $result = $this->$arr[array_shift($keys)] ?? null;
+        foreach ($keys as $key) {
+            if (!is_array($result)) return null;
+            $result = $result[$key] ?? null;
+        }
+        return $result;
     }
 
 
