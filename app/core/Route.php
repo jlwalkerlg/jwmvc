@@ -60,30 +60,30 @@ class Route
 
 
     /**
-     * Load middleware and add middleware class name to route.
+     * Store middleware class name on route.
      *
      * @param string $middleware Middleware to add.
      * @return Route Current route instance.
      */
     public function middleware(string $middleware)
     {
-        $middleware = ucfirst($middleware);
-        if (!file_exists(APP_ROOT . "/middleware/$middleware.php")) {
-            throw new Exception('Middleware not found.');
-        }
-        require_once APP_ROOT . "/middleware/$middleware.php";
         $this->middleware = $middleware;
         return $this;
     }
 
 
     /**
-     * Run middleware registered to route.
+     * Run middleware if registered.
      */
     public function runMiddleware()
     {
         if (isset($this->middleware)) {
-            $this->middleware::run();
+            $middleware = ucfirst($this->middleware);
+            if (!file_exists(APP_ROOT . "/middleware/$middleware.php")) {
+                throw new Exception('Middleware not found.');
+            }
+            require_once APP_ROOT . "/middleware/$middleware.php";
+            $middleware::run();
         }
     }
 
