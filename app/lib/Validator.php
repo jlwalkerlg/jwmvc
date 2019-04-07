@@ -21,11 +21,8 @@ class Validator
      */
     public function __construct(array $validations)
     {
-        // Instantiate all files from form.
-        $files = [];
-        foreach ($_FILES as $name => $file) {
-            $files[$name] = new FileUpload($file);
-        }
+        // Get all files from request.
+        $files = request()->file();
 
         // Store input fields on object.
         $this->input = array_merge($_POST, $files);
