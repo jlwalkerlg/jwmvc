@@ -1,13 +1,17 @@
 <?php
 
+// Autoload vendor packages using composer.
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+// Load environment variables.
+$dotenv = Dotenv\Dotenv::create(dirname(__DIR__));
+$dotenv->load();
+
 // Load config file.
 require_once 'config/config.php';
 
 // Load helper functions.
 require_once 'helpers/functions.php';
-
-// Autoload vendor using composer.
-require_once PROJECT_ROOT . '/vendor/autoload.php';
 
 // Autoload classes from lib or core directory.
 function my_autoload($class) {
