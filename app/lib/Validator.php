@@ -113,22 +113,32 @@ class Validator
      */
     private function required($field)
     {
-        if (is_null($this->request->input($field))) {
+        $input = $this->request->input($field);
+
+        if (is_null($input)) {
             $this->errors[$field] = 'Required.';
             return false;
         }
-        elseif ($this->request->file($field)) {
+
+        if ($this->request->file($field)) {
             if (!$this->request->file($field)->checkRequired()) {
                 $this->errors[$field] = $this->request->file($field)->getError('required');
                 return false;
             }
         }
         else {
-            if (trim($this->request->input($field)) === '') {
+            if (is_array($input)) {
+                if (empty($input)) {
+                    $this->errors[$field] = 'Required.';
+                    return false;
+                }
+            }
+            elseif (trim($input) === '') {
                 $this->errors[$field] = 'Required.';
                 return false;
             }
         }
+
         return true;
     }
 
@@ -223,6 +233,12 @@ class Validator
                     return false;
                 }
             }
+            elseif(is_array($val)) {
+                if (count($val) > $value) {
+                    $this->errors[$field] = 'At most ' . $value . ' inputs must be selected.';
+                    return false;
+                }
+            }
             else {
                 if (strlen($this->request->input($field)) > $value) {
                     $this->errors[$field] = 'Must not be longer than ' . $value . ' characters.';
@@ -248,6 +264,12 @@ class Validator
         if (is_numeric($val)) {
             if (floatval($val) < $value) {
                 $this->errors[$field] = 'Must not be less than ' . $value . '.';
+                return false;
+            }
+        }
+        elseif(is_array($val)) {
+            if (count($val) < $value) {
+                $this->errors[$field] = 'At least ' . $value . ' inputs must be selected.';
                 return false;
             }
         }
