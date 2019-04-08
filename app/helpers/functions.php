@@ -218,6 +218,33 @@ function spoofMethod(string $verb) {
 
 
 /**
+ * Recursively spread array.
+ *
+ * Returns array whose keys are all the keys leading to a value,
+ * joined by dots.
+ *
+ * @param array $array Array to spread.
+ * @return array Array after spreading.
+ */
+function spreadArray(array $array) {
+    $result = [];
+    $iterator = new RecursiveIteratorIterator(new RecursiveArrayIterator($array), RecursiveIteratorIterator::SELF_FIRST);
+    foreach ($iterator as $k => $v) {
+        if (!$iterator->hasChildren()) {
+            $p = [];
+            $depth = $iterator->getDepth();
+            for ($i = 0; $i <= $depth; $i++) {
+                $p[] = $iterator->getSubIterator($i)->key();
+            }
+            $path = implode('.', $p);
+            $result[$path] = $v;
+        }
+    }
+    return $result;
+}
+
+
+/**
  * Return form validation error message for a given field.
  *
  * @param string $msg Error message to display.
