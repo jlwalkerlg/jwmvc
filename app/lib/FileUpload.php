@@ -63,6 +63,13 @@ class FileUpload
     /** @var array $errors Array of errors regarding file upload. */
     private $errors = [];
 
+    /** @var array $checked Validations which have already been checked. */
+    private $checked = [
+        'checkRequired' => false,
+        'checkMaxSize' => false,
+        'checkType' => false
+    ];
+
 
     /**
      * Save file properties and destination on object.
@@ -217,6 +224,8 @@ class FileUpload
      */
 	public function checkRequired()
 	{
+        $this->checked['checkRequired'] = true;
+
         if ($this->error === 0) {
             if ($this->size === 0) {
                 $this->errors['required'] = 'File is empty.';
@@ -248,6 +257,8 @@ class FileUpload
      */
 	public function checkMaxSize()
 	{
+        $this->checked['checkMaxSize'] = true;
+
 		if ($this->size > $this->maxSize) {
 			$this->errors['maxSize'] = 'File exceeds the maximum size (' . self::convertFromBytes($this->maxSize) . ').';
 			return false;
@@ -263,6 +274,8 @@ class FileUpload
      */
     public function checkType()
     {
+        $this->checked['checkType'] = true;
+
         // Check file extension is in the list of permitted extensions.
         if (!in_array($this->extension, $this->permittedExtensions, true)) {
             $this->errors['type'] = 'Extension must be one of the following: ' . implode(', ', $this->permittedExtensions) . '.';
@@ -289,14 +302,11 @@ class FileUpload
      */
 	public function validate()
 	{
-		if (!$this->checkRequired()) {
-			return false;
-		}
-		if (!$this->checkMaxSize()) {
-			return false;
-		}
-        if (!$this->checkType()) {
-            return false;
+		foreach ($this->checked as $method => $passed) {
+            if ($passed) continue;
+            if (!$this->$method()) {
+                return false;
+            }
         }
 		return true;
     }
