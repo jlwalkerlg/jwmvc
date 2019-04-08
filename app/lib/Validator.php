@@ -113,13 +113,13 @@ class Validator
      */
     private function required($field)
     {
-        if (!is_null($this->request->input($field))) {
+        if (is_null($this->request->input($field))) {
             $this->errors[$field] = 'Required.';
             return false;
         }
-        elseif ($this->request->input($field) instanceof FileUpload) {
-            if (!$this->request->input($field)->checkRequired()) {
-                $this->errors[$field] = $this->request->input($field)->getError('required');
+        elseif ($this->request->file($field)) {
+            if (!$this->request->file($field)->checkRequired()) {
+                $this->errors[$field] = $this->request->file($field)->getError('required');
                 return false;
             }
         }
@@ -208,25 +208,26 @@ class Validator
      */
     private function max($field, $value)
     {
-        $val = $this->request->input($field);
+        if ($file = $this->request->file($field)) {
+            $file->setOptions(['maxSize' => $value]);
+            if (!$file->checkMaxSize()) {
+                $this->errors[$field] = $file->getError('maxSize');
+                return false;
+            }
+        } else {
+            $val = $this->request->input($field);
 
-        if ($val instanceof FileUpload) {
-            $val->setOptions(['maxSize' => $value]);
-            if (!$val->checkMaxSize()) {
-                $this->errors[$field] = $val->getError('maxSize');
-                return false;
+            if (is_numeric($val)) {
+                if (floatval($val) > $value) {
+                    $this->errors[$field] = 'Must not be greater than ' . $value . '.';
+                    return false;
+                }
             }
-        }
-        elseif (is_numeric($val)) {
-            if (floatval($val) > $value) {
-                $this->errors[$field] = 'Must not be greater than ' . $value . '.';
-                return false;
-            }
-        }
-        else {
-            if (strlen($this->request->input($field)) > $value) {
-                $this->errors[$field] = 'Must not be longer than ' . $value . ' characters.';
-                return false;
+            else {
+                if (strlen($this->request->input($field)) > $value) {
+                    $this->errors[$field] = 'Must not be longer than ' . $value . ' characters.';
+                    return false;
+                }
             }
         }
         return true;
@@ -284,8 +285,9 @@ class Validator
      * @return bool True if file extensions and MIME type is permitted; false otherwise.
      */
     private function types($field, ...$extensions) {
-        $this->request->input($field)->setOptions(['types' => $extensions]);
-        if (!$this->request->input($field)->checkType()) {
+        $file = $this->request->file($field);
+        $file->setOptions(['types' => $extensions]);
+        if (!$file->checkType()) {
             $this->errors[$field] = $this->request->input($field)->getError('type');
             return false;
         }
